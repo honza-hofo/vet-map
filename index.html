@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa veteriny ČR & SR | Makej s ManMatem</title>
+    <meta name="description" content="Interaktivní mapa psích fyzioterapeutů, veterinárních nemocnic a zvířecích sanitek v České republice a na Slovensku.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
+        body { font-family: 'Poppins', sans-serif; background: #f4f5f7; color: #333; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+        /* HEADER */
+        .site-header { background: #fff; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; height: 80px; position: relative; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
+        .logo-link img { height: 50px; width: auto; }
+        .nav-center { display: flex; align-items: center; gap: 36px; list-style: none; position: absolute; left: 50%; transform: translateX(-50%); }
+        .nav-center a { text-decoration: none; color: #333; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; position: relative; padding: 4px 0; transition: color 0.3s ease; }
+        .nav-center a::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: #E30A14; transition: width 0.3s ease; }
+        .nav-center a:hover::after, .nav-center a.active::after { width: 100%; }
+        .nav-center a:hover, .nav-center a.active { color: #E30A14; }
+        .header-right { display: flex; align-items: center; flex-shrink: 0; }
+        .btn-club { display: inline-flex; align-items: center; gap: 8px; background: #E30A14; color: #fff; text-decoration: none; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 12px 24px; border-radius: 50px; transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease; }
+        .btn-club:hover { background: #c50812; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(227,10,20,0.35); }
+        .burger-menu { display: none; background: none; border: none; cursor: pointer; padding: 8px; flex-direction: column; gap: 5px; z-index: 1010; }
+        .burger-menu span { display: block; width: 24px; height: 2px; background: #333; border-radius: 2px; transition: all 0.3s ease; }
+        .burger-menu.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+        .burger-menu.open span:nth-child(2) { opacity: 0; }
+        .burger-menu.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+        .mobile-nav-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,0.5); z-index: 999; opacity: 0; transition: opacity 0.3s ease; }
+        .mobile-nav-overlay.visible { opacity: 1; }
+        .mobile-nav { display: none; position: fixed; top:0; right:-300px; width:300px; height:100%; background:#fff; z-index:1005; padding:100px 30px 30px; transition: right 0.3s ease; box-shadow: -5px 0 30px rgba(0,0,0,0.1); overflow-y: auto; }
+        .mobile-nav.open { right: 0; }
+        .mobile-nav a { display:block; text-decoration:none; color:#333; font-family:'Montserrat',sans-serif; font-size:15px; font-weight:600; text-transform:uppercase; letter-spacing:1px; padding:16px 0; border-bottom:1px solid #eee; }
+        .mobile-nav a:hover, .mobile-nav a.active { color: #E30A14; }
+        .mobile-nav .btn-club-mobile { display:inline-block; margin-top:24px; background:#E30A14; color:#fff; text-decoration:none; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:14px 28px; border-radius:50px; text-align:center; }
+
+        /* HERO */
+        .hero { background: #fff; padding: 30px 30px 20px; text-align: center; border-bottom: 1px solid #eee; }
+        .hero-inner { max-width: 700px; margin: 0 auto; }
+        .hero h1 { font-family: 'Montserrat', sans-serif; font-size: 44px; font-weight: 800; color: #222; margin-bottom: 14px; line-height: 1.15; }
+        .hero h1 span { color: #E30A14; }
+        .hero p { font-size: 17px; color: #666; font-weight: 300; line-height: 1.7; }
+        .hero-accent { width: 60px; height: 3px; background: #E30A14; margin: 20px auto 0; border-radius: 2px; }
+
+        /* STATS BAR */
+        .stats-bar { background: #fff; border-bottom: 1px solid #eee; padding: 20px 30px; }
+        .stats-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+        .stat-item { text-align: center; }
+        .stat-num { font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; color: #E30A14; }
+        .stat-label { font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+        /* LEGEND */
+        .legend { max-width: 1200px; margin: 24px auto 0; padding: 0 30px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #666; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .legend-dot.physio { background: #22c55e; }
+        .legend-dot.hospital { background: #E30A14; }
+        .legend-dot.ambulance { background: #3b82f6; }
+
+
+        /* COUNTRY TABS */
+        .country-tabs { max-width: 1200px; margin: 20px auto 0; padding: 0 30px; display: flex; gap: 8px; }
+        .country-btn { background: #fff; border: 2px solid #eee; color: #666; font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; padding: 10px 24px; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
+        .country-btn:hover { border-color: #E30A14; color: #E30A14; }
+        .country-btn.active { background: #E30A14; border-color: #E30A14; color: #fff; }
+        .country-btn .flag { font-size: 18px; }
+
+        /* FILTER TABS */
+        .filter-tabs { max-width: 1200px; margin: 20px auto 0; padding: 0 30px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-btn { background: #fff; border: 2px solid #eee; color: #666; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 18px; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; }
+        .filter-btn:hover { border-color: #E30A14; color: #E30A14; }
+        .filter-btn.active { background: #E30A14; border-color: #E30A14; color: #fff !important; }
+
+        /* MAP LAYOUT */
+        .map-section { max-width: 1400px; margin: 16px auto 0; padding: 0 20px 30px; }
+        .map-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+        .map-col { position: sticky; top: 100px; }
+        .map-svg-wrap { background: #fff; border-radius: 16px; padding: 6px 2px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); position: relative; }
+        .map-svg-wrap svg { width: 100%; height: auto; display: block; }
+        .map-source { text-align: center; font-size: 11px; color: #bbb; margin-top: 10px; }
+        .zoom-back-btn { display:none; position:absolute; top:10px; left:10px; z-index:1100; background:#fff; border:2px solid #E30A14; color:#E30A14; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700; padding:8px 18px; border-radius:50px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
+        .zoom-back-btn:hover { background:#E30A14; color:#fff; }
+        .zoom-legend { display:none; position:absolute; bottom:10px; left:10px; z-index:1100; background:rgba(255,255,255,0.95); border-radius:8px; padding:6px 10px; font-size:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+        .zoom-legend span { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:3px; vertical-align:middle; }
+        .list-col { }
+
+        /* DETAIL PANEL */
+        .detail-default { background: #fff; border-radius: 16px; padding: 50px 30px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+        .detail-default h3 { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; color: #222; margin: 16px 0 8px; }
+        .detail-default p { font-size: 14px; color: #999; line-height: 1.6; }
+        .detail-content { display: none; flex: 1; }
+        .detail-header { background: #fff; border-radius: 16px 16px 0 0; padding: 20px 24px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; position: sticky; top: 80px; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .detail-header h3 { font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 700; color: #222; }
+        .detail-header .count { background: #E30A14; color: #fff; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; font-family: 'Montserrat', sans-serif; }
+        .clinics-list { max-height: calc(100vh - 200px); overflow-y: auto; padding: 12px; }
+
+        /* CLINIC CARD */
+        .clinic-card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid #eee; transition: all 0.3s ease; position: relative; }
+        .clinic-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .clinic-card.highlighted { box-shadow: 0 0 0 3px #E30A14, 0 8px 30px rgba(227,10,20,0.15); transform: translateY(-2px); }
+        .clinic-card .type-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 20px; margin-bottom: 8px; }
+        .badge-physio { background: rgba(34,197,94,0.1); color: #16a34a; }
+        .badge-hospital { background: rgba(227,10,20,0.08); color: #E30A14; }
+        .badge-ambulance { background: rgba(59,130,246,0.08); color: #2563eb; }
+        .badge-vet { background: rgba(168,85,247,0.08); color: #7c3aed; }
+        .clinic-card h4 { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: #222; margin-bottom: 3px; line-height: 1.3; }
+        .clinic-card .city { font-size: 13px; color: #999; margin-bottom: 6px; }
+        .clinic-card .desc { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 10px; }
+        .clinic-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .clinic-meta .meta-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+        .clinic-meta .meta-row svg { width: 14px; height: 14px; flex-shrink: 0; color: #bbb; }
+        .hours-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; font-weight: 500; padding: 6px 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 4px; }
+        .hours-row svg { width: 15px; height: 15px; flex-shrink: 0; color: #999; }
+        .hours-nonstop { background: linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.15) 100%); color: #15803d; font-weight: 700; border: 1px solid rgba(22,163,74,0.2); }
+        .hours-nonstop svg { color: #16a34a; }
+        .nonstop-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; flex-shrink: 0; animation: nonstopPulse 2s ease-in-out infinite; }
+        @keyframes nonstopPulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(22,163,74,0.4); } 50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(22,163,74,0); } }
+        .nonstop-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .acute-banner { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #fff; font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; padding: 5px 12px; border-radius: 6px; margin-bottom: 10px; }
+        .acute-banner svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .acute-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: acutePulse 1s ease-in-out infinite; }
+        @keyframes acutePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .clinic-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .clinic-actions a { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; text-decoration: none; padding: 7px 14px; border-radius: 50px; transition: all 0.3s ease; font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 0.3px; }
+        .btn-nav { background: #222; color: #fff; }
+        .btn-nav:hover { background: #E30A14; transform: translateY(-1px); }
+        .btn-web { background: rgba(227,10,20,0.08); color: #E30A14; }
+        .btn-web:hover { background: #E30A14; color: #fff; transform: translateY(-1px); }
+        .btn-tel { background: rgba(34,197,94,0.1); color: #16a34a; }
+        .btn-tel:hover { background: #16a34a; color: #fff; transform: translateY(-1px); }
+
+        /* LEAFLET MAP */
+        .leaflet-wrap { border-radius: 16px; overflow: hidden; }
+        .leaflet-control-attribution { font-size: 10px !important; }
+        .leaflet-control-attribution a[href*="ukraine"],
+        .leaflet-control-attribution span[style*="blue"],
+        .leaflet-control-attribution span[style*="yellow"],
+        div[class*="ukraine"], div[class*="banner"] { display: none !important; }
+
+        /* SVG MAP STYLES */
+        .region { fill: #f0f0f0; stroke: #fff; stroke-width: 2; cursor: pointer; transition: fill 0.3s; }
+        .region:hover, .region.active { fill: #E30A14; opacity: 0.85; }
+        .region-label { font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 600; fill: #666; pointer-events: none; text-anchor: middle; }
+        .region-count { font-family: 'Montserrat', sans-serif; font-size: 9px; font-weight: 700; fill: #E30A14; pointer-events: none; text-anchor: middle; }
+
+        /* FOOTER */
+        .site-footer { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: rgba(255,255,255,0.7); padding: 40px 30px 30px; }
+        .footer-bottom { max-width: 1200px; margin: 0 auto; text-align: center; font-size: 13px; color: rgba(255,255,255,0.35); }
+        .footer-bottom a { color: rgba(255,255,255,0.5); text-decoration: none; }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .map-col { position: static; }
+        }
+        @media (max-width: 768px) {
+            .header-inner { height: 65px; padding: 0 20px; }
+            .logo-link img { height: 38px; }
+            .nav-center { display: none; }
+            .header-right .btn-club { display: none; }
+            .burger-menu { display: flex; }
+            .mobile-nav { display: block; }
+            .mobile-nav-overlay { display: block; }
+            .hero { padding: 40px 20px 30px; }
+            .hero h1 { font-size: 30px; }
+            .stats-inner { gap: 20px; }
+            .stat-num { font-size: 22px; }
+            .map-layout { grid-template-columns: 1fr; }
+            .map-col { width: 100%; position: static; }
+            .list-col { width: 100%; }
+            .map-section { padding: 0 16px 40px; }
+            .legend { padding: 0 16px; }
+            .filter-tabs { padding: 0 16px; }
+            .detail-header { position: sticky; top: 65px; z-index: 10; border-radius: 0; }
+            .clinics-list { max-height: none; }
+            .filter-btn { padding: 12px 20px; font-size: 13px; }
+            .country-btn { padding: 12px 20px; font-size: 13px; }
+            .clinic-actions a { padding: 12px 18px; font-size: 12px; }
+            .zoom-back-btn { padding: 12px 22px; font-size: 14px; }
+            .region-label { font-size: 14px; font-weight: 700; }
+            .region-count { font-size: 12px; }
+            .country-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+            .country-tabs::-webkit-scrollbar { display: none; }
+            .country-btn { flex-shrink: 0; white-space: nowrap; }
+        }
+        @media (max-width: 480px) {
+            .hero h1 { font-size: 26px; }
+            .stats-inner { gap: 12px; }
+            .stat-num { font-size: 20px; }
+            .stat-label { font-size: 10px; }
+            .clinic-actions { flex-direction: column; }
+            .clinic-actions a { justify-content: center; }
+            .region-label { font-size: 16px; font-weight: 800; }
+            .region-count { font-size: 14px; font-weight: 800; }
+            .country-btn { padding: 10px 14px; font-size: 12px; }
+        }
+
+        /* USER LOCATION PULSE */
+        @keyframes userPulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(37,99,235,0.3), 0 2px 6px rgba(0,0,0,0.3); } 50% { box-shadow: 0 0 0 8px rgba(37,99,235,0.15), 0 2px 6px rgba(0,0,0,0.3); } }
+
+        /* LOADING SPINNER */
+        .loading-spinner { display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+        .loading-spinner::after { content: ''; width: 32px; height: 32px; border: 3px solid #eee; border-top-color: #E30A14; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* SOS PANEL */
+        .sos-btn-fixed { position:fixed; bottom:24px; right:24px; z-index:2000; background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff; border:none; border-radius:50%; width:60px; height:60px; font-size:20px; font-weight:800; cursor:pointer; box-shadow:0 4px 20px rgba(220,38,38,0.5); display:flex; align-items:center; justify-content:center; animation:sosPulse 2s ease-in-out infinite; font-family:'Montserrat',sans-serif; }
+        @keyframes sosPulse { 0%,100%{box-shadow:0 4px 20px rgba(220,38,38,0.5);} 50%{box-shadow:0 4px 30px rgba(220,38,38,0.8);} }
+        .sos-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:3000; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
+        .sos-overlay.active { display:flex; }
+        .sos-panel { background:#fff; border-radius:16px; max-width:480px; width:100%; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,0.3); margin-top:60px; }
+        .sos-panel h2 { font-family:'Montserrat',sans-serif; font-size:22px; font-weight:800; color:#dc2626; margin-bottom:4px; }
+        .sos-panel .sos-subtitle { font-size:14px; color:#666; margin-bottom:16px; }
+        .sos-card { background:#fef2f2; border:2px solid #fecaca; border-radius:12px; padding:14px; margin-bottom:12px; }
+        .sos-card h3 { font-family:'Montserrat',sans-serif; font-size:16px; font-weight:700; color:#222; margin-bottom:2px; }
+        .sos-card .sos-dist { font-size:13px; color:#dc2626; font-weight:600; }
+        .sos-card .sos-city { font-size:13px; color:#666; }
+        .sos-card .sos-call { display:inline-block; margin-top:8px; background:#dc2626; color:#fff; text-decoration:none; font-family:'Montserrat',sans-serif; font-size:14px; font-weight:700; padding:10px 20px; border-radius:8px; }
+        .sos-card .sos-call:hover { background:#b91c1c; }
+        .sos-close { position:absolute; top:16px; right:16px; background:none; border:none; font-size:28px; color:#999; cursor:pointer; }
+        .sos-searching { text-align:center; padding:30px; color:#666; }
+    </style>
+<script src="mapa_data.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="index.html" class="logo-link">
+                <img src="img/manmat-logo.png" alt="ManMat">
+            </a>
+            <ul class="nav-center">
+                <li><a href="kontakt.html">Kontakt</a></li>
+                <li><a href="ambasadori.html">Ambasadori</a></li>
+                <li><a href="clanky.html">Články</a></li>
+                <li><a href="kalendar.html">Kalendář</a></li>
+                <li><a href="mapa.html" class="active">Mapa</a></li>
+            </ul>
+            <div class="header-right">
+                <a href="#" class="btn-club">Manmat Club</a>
+                <button class="burger-menu" id="burgerMenu" aria-label="Menu"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </header>
+    <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
+    <nav class="mobile-nav" id="mobileNav">
+        <a href="kontakt.html">Kontakt</a>
+        <a href="ambasadori.html">Ambasadori</a>
+        <a href="clanky.html">Články</a>
+        <a href="kalendar.html">Kalendář</a>
+        <a href="mapa.html" class="active">Mapa</a>
+        <a href="#" class="btn-club-mobile">Manmat Club</a>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>Veterina po celé <span>Evropě</span></h1>
+            <p>Interaktivní mapa psích fyzioterapeutů, veterinárních nemocnic, pohotovostí a zvířecích sanitek v Česku, na Slovensku, v Polsku, Německu a Rakousku. Klikni na kraj a najdi nejbližší pomoc pro svého psa.</p>
+            <div class="hero-accent"></div>
+        </div>
+    </section>
+
+    <div class="stats-bar">
+        <div class="stats-inner">
+            <div class="stat-item">
+                <div class="stat-num" id="totalCount">17,630</div>
+                <div class="stat-label">Zařízení celkem</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="physioCount">156</div>
+                <div class="stat-label">Fyzioterapie</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="hospitalCount">412</div>
+                <div class="stat-label">Nemocnice</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="ambulanceCount">1,413</div>
+                <div class="stat-label">Sanitky</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="vetCount">15,649</div>
+                <div class="stat-label">Vet. kliniky</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="regionCount">126</div>
+                <div class="stat-label">Krajů</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot physio"></div> Fyzioterapie & rehabilitace</div>
+        <div class="legend-item"><div class="legend-dot hospital"></div> Nemocnice & pohotovost</div>
+        <div class="legend-item"><div class="legend-dot ambulance"></div> Zvířecí sanitka</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#7c3aed;"></div> Veterinární klinika</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#dc2626;"></div> Akutní případy</div>
+    </div>
+
+    <div class="country-tabs" id="countryTabs">
+        <!-- Generated dynamically from countryMeta -->
+    </div>
+
+    <div style="max-width:600px; margin:0 auto 16px; padding:0 20px;">
+        <div style="position:relative;">
+            <input type="text" id="clinicSearch" placeholder="Hledat kliniku nebo město..." style="width:100%; padding:12px 16px 12px 42px; border:2px solid #e5e7eb; border-radius:12px; font-size:14px; font-family:'Inter',sans-serif; outline:none; transition:border-color 0.2s; box-sizing:border-box;" onfocus="this.style.borderColor='#E30A14'" onblur="this.style.borderColor='#e5e7eb'">
+            <svg style="position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+    </div>
+
+    <div class="filter-tabs" id="filterTabs">
+        <button class="filter-btn active" data-filter="all">Vše</button>
+        <button class="filter-btn" data-filter="physio">Fyzioterapie</button>
+        <button class="filter-btn" data-filter="hospital">Nemocnice</button>
+        <button class="filter-btn" data-filter="ambulance">Sanitky</button>
+        <button class="filter-btn" data-filter="vet" style="border-color:#7c3aed; color:#7c3aed;">Veterinární kliniky</button>
+        <button class="filter-btn" data-filter="acute" style="border-color:#dc2626; color:#dc2626;">Akutní / SOS</button>
+        <button class="filter-btn" data-filter="cardiology" style="border-color:#e11d48; color:#e11d48;">Kardiologie</button>
+        <button class="filter-btn" data-filter="surgery" style="border-color:#0891b2; color:#0891b2;">Chirurgie</button>
+        <button class="filter-btn" data-filter="xray" style="border-color:#4f46e5; color:#4f46e5;">RTG</button>
+    </div>
+
+    <section class="map-section">
+        <div class="map-layout">
+            <div class="map-col">
+                <div class="map-svg-wrap">
+                    <button class="zoom-back-btn" id="czZoomBack">&#8592; Zpět</button>
+                    <div class="zoom-legend" id="czZoomLegend"><span style="background:#7c3aed"></span>Vet <span style="background:#E30A14"></span>Nemocnice <span style="background:#22c55e"></span>Fyzio <span style="background:#3b82f6"></span>Sanitka</div>
+                    <svg viewBox="0 0 800 500" id="czMap">
+                        <!-- Karlovarský -->
+                        <path class="region" data-region="karlovarsky" d="M60,180 L90,150 L130,140 L155,155 L150,185 L130,200 L100,210 L70,200Z"/>
+                        <text class="region-label" x="110" y="178">Karlovarský</text>
+                        <text class="region-count" x="110" y="192">74</text>
+                        <!-- Ústecký -->
+                        <path class="region" data-region="ustecky" d="M130,140 L180,100 L240,90 L270,105 L265,140 L240,160 L200,170 L155,155Z"/>
+                        <text class="region-label" x="200" y="132">Ústecký</text>
+                        <text class="region-count" x="200" y="146">254</text>
+                        <!-- Liberecký -->
+                        <path class="region" data-region="liberecky" d="M270,105 L320,80 L380,75 L400,100 L380,130 L340,140 L300,140 L265,140Z"/>
+                        <text class="region-label" x="335" y="112">Liberecký</text>
+                        <text class="region-count" x="335" y="126">223</text>
+                        <!-- Královéhradecký -->
+                        <path class="region" data-region="kralovehradecky" d="M380,75 L440,70 L500,80 L520,110 L500,145 L460,155 L420,150 L380,130Z"/>
+                        <text class="region-label" x="450" y="115">Královéhradecký</text>
+                        <text class="region-count" x="450" y="129">343</text>
+                        <!-- Pardubický -->
+                        <path class="region" data-region="pardubicky" d="M420,150 L460,155 L500,145 L540,160 L560,190 L530,210 L490,210 L450,200 L420,180Z"/>
+                        <text class="region-label" x="490" y="182">Pardubický</text>
+                        <text class="region-count" x="490" y="196">349</text>
+                        <!-- Plzeňský -->
+                        <path class="region" data-region="plzensky" d="M60,200 L100,210 L130,200 L150,185 L155,155 L200,170 L240,160 L250,190 L230,230 L200,260 L160,270 L120,260 L80,240Z"/>
+                        <text class="region-label" x="165" y="225">Plzeňský</text>
+                        <text class="region-count" x="165" y="239">294</text>
+                        <!-- Středočeský -->
+                        <path class="region" data-region="stredocesky" d="M240,160 L265,140 L300,140 L340,140 L380,130 L420,150 L420,180 L450,200 L430,230 L400,250 L360,260 L320,250 L290,260 L260,250 L230,230 L250,190Z"/>
+                        <text class="region-label" x="330" y="205">Středočeský</text>
+                        <text class="region-count" x="330" y="219">723</text>
+                        <!-- Praha -->
+                        <circle class="region" data-region="praha" cx="330" cy="175" r="22"/>
+                        <text class="region-label" x="330" y="173">Praha</text>
+                        <text class="region-count" x="330" y="184">803</text>
+                        <!-- Jihočeský -->
+                        <path class="region" data-region="jihocesky" d="M120,260 L160,270 L200,260 L230,230 L260,250 L290,260 L300,290 L280,330 L240,360 L190,370 L140,350 L110,320 L100,280Z"/>
+                        <text class="region-label" x="200" y="310">Jihočeský</text>
+                        <text class="region-count" x="200" y="324">438</text>
+                        <!-- Vysočina -->
+                        <path class="region" data-region="vysocina" d="M290,260 L320,250 L360,260 L400,250 L430,260 L440,290 L420,320 L380,340 L340,330 L300,290Z"/>
+                        <text class="region-label" x="370" y="295">Vysočina</text>
+                        <text class="region-count" x="370" y="309">375</text>
+                        <!-- Jihomoravský -->
+                        <path class="region" data-region="jihomoravsky" d="M430,260 L480,250 L530,260 L560,280 L570,320 L550,360 L510,380 L460,370 L420,350 L420,320 L440,290Z"/>
+                        <text class="region-label" x="495" y="315">Jihomoravský</text>
+                        <text class="region-count" x="495" y="329">1111</text>
+                        <!-- Olomoucký -->
+                        <path class="region" data-region="olomoucky" d="M530,210 L560,190 L600,180 L650,190 L670,220 L650,250 L610,260 L570,260 L530,260 L480,250 L430,260 L430,230 L450,200 L490,210Z"/>
+                        <text class="region-label" x="560" y="230">Olomoucký</text>
+                        <text class="region-count" x="560" y="244">347</text>
+                        <!-- Zlínský -->
+                        <path class="region" data-region="zlinsky" d="M570,260 L610,260 L650,250 L680,270 L700,300 L680,340 L640,360 L600,350 L570,320 L560,280Z"/>
+                        <text class="region-label" x="630" y="305">Zlínský</text>
+                        <text class="region-count" x="630" y="319">312</text>
+                        <!-- Moravskoslezský -->
+                        <path class="region" data-region="moravskoslezsky" d="M650,190 L700,175 L745,185 L760,220 L750,260 L720,280 L700,300 L680,270 L650,250 L670,220Z"/>
+                        <text class="region-label" x="715" y="230">Moravsko-</text>
+                        <text class="region-label" x="715" y="242">slezský</text>
+                        <text class="region-count" x="715" y="256">595</text>
+                    </svg>
+                    <div id="czLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                </div>
+                <div class="map-svg-wrap" id="skMapWrap" style="display:none;">
+                    <button class="zoom-back-btn" id="skZoomBack">&#8592; Zpět</button>
+                    <div class="zoom-legend" id="skZoomLegend"><span style="background:#7c3aed"></span>Vet <span style="background:#E30A14"></span>Nemocnice <span style="background:#22c55e"></span>Fyzio <span style="background:#3b82f6"></span>Sanitka</div>
+                    <svg viewBox="0 0 800 500" id="skMap">
+                      <g transform="translate(70,100)">
+                        <!-- Bratislavský -->
+                        <path class="region" data-region="sk_bratislavsky" d="M40,200 L70,170 L110,165 L130,185 L120,215 L90,230 L55,225Z"/>
+                        <text class="region-label" x="85" y="195">Bratislavský</text>
+                        <text class="region-count" x="85" y="209">74</text>
+                        <!-- Trnavský -->
+                        <path class="region" data-region="sk_trnavsky" d="M110,165 L160,140 L200,150 L210,180 L190,210 L150,220 L120,215 L130,185Z"/>
+                        <text class="region-label" x="165" y="182">Trnavský</text>
+                        <text class="region-count" x="165" y="196">32</text>
+                        <!-- Trenčiansky -->
+                        <path class="region" data-region="sk_trenciansky" d="M160,140 L200,110 L250,100 L280,120 L270,155 L240,170 L210,180 L200,150Z"/>
+                        <text class="region-label" x="230" y="140">Trenčiansky</text>
+                        <text class="region-count" x="230" y="154">45</text>
+                        <!-- Nitriansky -->
+                        <path class="region" data-region="sk_nitriansky" d="M130,185 L210,180 L240,170 L270,190 L260,230 L230,260 L180,270 L140,250 L120,215Z"/>
+                        <text class="region-label" x="200" y="225">Nitriansky</text>
+                        <text class="region-count" x="200" y="239">25</text>
+                        <!-- Žilinský -->
+                        <path class="region" data-region="sk_zilinsky" d="M250,100 L310,80 L380,85 L410,110 L400,145 L370,165 L330,170 L290,165 L270,155 L280,120Z"/>
+                        <text class="region-label" x="340" y="130">Žilinský</text>
+                        <text class="region-count" x="340" y="144">26</text>
+                        <!-- Banskobystrický -->
+                        <path class="region" data-region="sk_banskobystrick" d="M270,155 L290,165 L330,170 L370,165 L400,185 L420,220 L400,260 L360,280 L310,280 L270,260 L260,230 L270,190Z"/>
+                        <text class="region-label" x="340" y="225">Bansko-</text>
+                        <text class="region-label" x="340" y="237">bystrický</text>
+                        <text class="region-count" x="340" y="253">22</text>
+                        <!-- Prešovský -->
+                        <path class="region" data-region="sk_presovsky" d="M410,110 L470,90 L540,80 L600,95 L620,130 L600,165 L560,180 L510,185 L460,175 L430,160 L400,145Z"/>
+                        <text class="region-label" x="510" y="135">Prešovský</text>
+                        <text class="region-count" x="510" y="149">31</text>
+                        <!-- Košický -->
+                        <path class="region" data-region="sk_kosicky" d="M430,160 L460,175 L510,185 L560,180 L590,200 L600,240 L580,280 L540,300 L490,295 L450,275 L420,250 L420,220 L400,185 L400,165Z"/>
+                        <text class="region-label" x="505" y="235">Košický</text>
+                        <text class="region-count" x="505" y="249">62</text>
+                      </g>
+                    </svg>
+                    <div id="skLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                </div>
+                <div class="map-svg-wrap" id="plMapWrap" style="display:none;">
+                    <button class="zoom-back-btn" id="plZoomBack">&#8592; Zpět</button>
+                    <div class="zoom-legend" id="plZoomLegend"><span style="background:#7c3aed"></span>Vet <span style="background:#E30A14"></span>Nemocnice <span style="background:#22c55e"></span>Fyzio <span style="background:#3b82f6"></span>Sanitka</div>
+                    <svg viewBox="0 0 800 500" id="plMap">
+                        <!-- Zachodniopomorskie -->
+                        <path class="region" data-region="pl_zachodniopomorskie" d="M178,106 L182,70 L207,60 L234,77 L270,67 L292,60 L307,41 L307,82 L299,106 L298,127 L283,134 L266,138 L256,152 L252,162 L239,167 L228,172 L215,185 L205,198 L199,203 L179,185 L179,154 L178,106Z"/>
+                        <text class="region-label" x="239" y="115">Zachodnio-</text>
+                        <text class="region-label" x="239" y="125">pomorskie</text>
+                        <text class="region-count" x="239" y="137">155</text>
+                        <!-- Pomorskie -->
+                        <path class="region" data-region="pl_pomorskie" d="M307,41 L328,44 L364,54 L373,59 L385,69 L385,73 L404,70 L422,69 L422,86 L416,108 L410,123 L408,135 L398,142 L386,146 L372,144 L359,152 L345,157 L333,155 L321,149 L310,142 L298,127 L299,106 L307,82 L307,41Z"/>
+                        <text class="region-label" x="361" y="103">Pomorskie</text>
+                        <text class="region-count" x="361" y="115">134</text>
+                        <!-- Warmińsko-Mazurskie -->
+                        <path class="region" data-region="pl_warminskomazurskie" d="M422,69 L429,69 L456,75 L478,73 L500,77 L527,75 L561,75 L561,93 L549,108 L536,113 L518,121 L500,123 L496,136 L487,142 L474,152 L466,159 L456,164 L443,165 L429,165 L417,159 L408,135 L410,123 L416,108 L422,86 L422,69Z"/>
+                        <text class="region-label" x="480" y="103">Warmińsko-</text>
+                        <text class="region-label" x="480" y="113">Mazurskie</text>
+                        <text class="region-count" x="480" y="125">156</text>
+                        <!-- Podlaskie -->
+                        <path class="region" data-region="pl_podlaskie" d="M561,75 L579,79 L592,87 L611,93 L611,129 L594,142 L593,164 L592,185 L580,200 L571,210 L562,221 L553,231 L541,238 L532,241 L522,228 L518,215 L507,203 L504,185 L496,167 L487,142 L496,136 L500,123 L518,121 L536,113 L549,108 L561,93 L561,75Z"/>
+                        <text class="region-label" x="549" y="156">Podlaskie</text>
+                        <text class="region-count" x="549" y="168">62</text>
+                        <!-- Lubuskie -->
+                        <path class="region" data-region="pl_lubuskie" d="M199,203 L205,198 L215,185 L228,172 L239,167 L252,162 L256,152 L266,138 L271,152 L269,168 L274,181 L279,195 L282,210 L279,224 L283,240 L280,253 L274,260 L269,267 L262,274 L249,279 L239,285 L229,289 L219,295 L209,289 L204,276 L200,259 L189,250 L187,236 L189,221 L199,203Z"/>
+                        <text class="region-label" x="240" y="223">Lubuskie</text>
+                        <text class="region-count" x="240" y="235">51</text>
+                        <!-- Wielkopolskie -->
+                        <path class="region" data-region="pl_wielkopolskie" d="M266,138 L283,134 L298,127 L310,142 L321,149 L333,155 L345,157 L359,152 L367,164 L372,178 L369,192 L371,203 L375,217 L377,231 L373,244 L367,257 L359,267 L350,276 L341,279 L332,285 L322,286 L312,283 L300,285 L291,282 L283,279 L280,253 L283,240 L279,224 L282,210 L279,195 L274,181 L269,168 L271,152 L266,138Z"/>
+                        <text class="region-label" x="319" y="210">Wielkopolskie</text>
+                        <text class="region-count" x="319" y="222">256</text>
+                        <!-- Kujawsko-Pomorskie -->
+                        <path class="region" data-region="pl_kujawskopomorskie" d="M359,152 L372,144 L386,146 L398,142 L408,135 L417,159 L429,165 L443,165 L443,178 L438,192 L429,203 L421,210 L413,217 L403,217 L390,214 L375,217 L371,203 L369,192 L372,178 L367,164 L359,152Z"/>
+                        <text class="region-label" x="398" y="172">Kujawsko-</text>
+                        <text class="region-label" x="398" y="182">Pomorskie</text>
+                        <text class="region-count" x="398" y="194">188</text>
+                        <!-- Mazowieckie -->
+                        <path class="region" data-region="pl_mazowieckie" d="M443,165 L456,164 L466,159 L474,152 L487,142 L496,167 L504,185 L507,203 L518,215 L522,228 L532,241 L524,253 L517,264 L509,274 L500,283 L491,289 L482,293 L470,296 L460,296 L451,293 L442,286 L433,279 L426,267 L426,253 L424,238 L421,224 L421,210 L429,203 L438,192 L443,178 L443,165Z"/>
+                        <text class="region-label" x="470" y="228">Mazowieckie</text>
+                        <text class="region-count" x="470" y="240">811</text>
+                        <!-- Łódzkie -->
+                        <path class="region" data-region="pl_lodzkie" d="M373,244 L377,231 L375,217 L390,214 L403,217 L413,217 L421,224 L424,238 L426,253 L426,267 L433,279 L442,286 L451,293 L446,303 L438,310 L430,318 L421,322 L413,323 L402,320 L392,315 L382,309 L373,300 L366,290 L359,279 L359,267 L367,257 L373,244Z"/>
+                        <text class="region-label" x="403" y="272">Łódzkie</text>
+                        <text class="region-count" x="403" y="284">146</text>
+                        <!-- Dolnośląskie -->
+                        <path class="region" data-region="pl_dolnoslaskie" d="M219,295 L229,289 L239,285 L249,279 L262,274 L269,267 L274,260 L280,253 L283,279 L291,282 L300,285 L312,283 L322,286 L332,285 L331,296 L328,308 L323,319 L320,329 L313,336 L305,343 L300,356 L291,362 L280,365 L270,367 L261,367 L251,361 L240,358 L229,352 L217,345 L209,336 L212,322 L219,309 L219,295Z"/>
+                        <text class="region-label" x="272" y="313">Dolnośląskie</text>
+                        <text class="region-count" x="272" y="325">220</text>
+                        <!-- Opolskie -->
+                        <path class="region" data-region="pl_opolskie" d="M332,285 L341,279 L350,276 L359,279 L366,290 L373,300 L369,312 L364,322 L358,332 L350,339 L344,351 L337,361 L328,365 L320,364 L313,358 L305,343 L313,336 L320,329 L323,319 L328,308 L331,296 L332,285Z"/>
+                        <text class="region-label" x="339" y="320">Opolskie</text>
+                        <text class="region-count" x="339" y="332">91</text>
+                        <!-- Śląskie -->
+                        <path class="region" data-region="pl_slaskie" d="M373,300 L382,309 L392,315 L402,320 L413,323 L411,336 L406,349 L403,361 L402,375 L396,382 L389,388 L382,392 L375,394 L368,388 L362,384 L355,381 L346,375 L337,361 L344,351 L350,339 L358,332 L364,322 L369,312 L373,300Z"/>
+                        <text class="region-label" x="377" y="348">Śląskie</text>
+                        <text class="region-count" x="377" y="360">304</text>
+                        <!-- Świętokrzyskie -->
+                        <path class="region" data-region="pl_swietokrzyskie" d="M451,293 L460,296 L470,296 L482,293 L491,289 L491,303 L486,318 L479,329 L474,339 L466,346 L456,351 L446,354 L437,352 L429,348 L421,343 L421,332 L421,322 L430,318 L438,310 L446,303 L451,293Z"/>
+                        <text class="region-label" x="455" y="314">Święto-</text>
+                        <text class="region-label" x="455" y="324">krzyskie</text>
+                        <text class="region-count" x="455" y="336">111</text>
+                        <!-- Lubelskie -->
+                        <path class="region" data-region="pl_lubelskie" d="M532,241 L541,238 L553,231 L562,221 L571,210 L580,200 L592,185 L593,164 L594,142 L611,129 L613,152 L622,178 L622,203 L620,224 L612,244 L601,267 L597,286 L594,303 L590,318 L584,329 L575,339 L563,346 L553,351 L541,354 L530,355 L518,351 L508,343 L500,336 L495,326 L491,315 L491,303 L491,289 L500,283 L509,274 L517,264 L524,253 L532,241Z"/>
+                        <text class="region-label" x="557" y="265">Lubelskie</text>
+                        <text class="region-count" x="557" y="277">235</text>
+                        <!-- Małopolskie -->
+                        <path class="region" data-region="pl_malopolskie" d="M413,323 L421,322 L421,332 L421,343 L429,348 L437,352 L446,354 L456,351 L466,346 L474,339 L479,329 L486,318 L491,315 L495,326 L491,339 L486,351 L481,361 L475,371 L466,379 L457,387 L446,394 L437,401 L429,408 L421,418 L414,425 L407,430 L400,430 L392,424 L389,411 L387,401 L389,388 L396,382 L402,375 L403,361 L406,349 L411,336 L413,323Z"/>
+                        <text class="region-label" x="440" y="366">Małopolskie</text>
+                        <text class="region-count" x="440" y="378">211</text>
+                        <!-- Podkarpackie -->
+                        <path class="region" data-region="pl_podkarpackie" d="M486,318 L491,303 L491,315 L500,336 L508,343 L518,351 L530,355 L541,354 L553,351 L563,346 L575,339 L584,329 L590,318 L594,303 L594,318 L589,336 L581,354 L571,368 L563,381 L555,394 L550,408 L545,423 L537,430 L528,436 L517,437 L506,436 L495,433 L484,428 L475,425 L466,423 L457,415 L451,408 L446,401 L437,401 L446,394 L457,387 L466,379 L475,371 L481,361 L486,351 L491,339 L495,326 L486,318Z"/>
+                        <text class="region-label" x="520" y="375">Podkarpackie</text>
+                        <text class="region-count" x="520" y="387">151</text>
+                    </svg>
+                    <div id="plLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                </div>
+                <div class="map-svg-wrap" id="deMapWrap" style="display:none;">
+                    <button class="zoom-back-btn" id="deZoomBack">&#8592; Zpět</button>
+                    <div class="zoom-legend" id="deZoomLegend"><span style="background:#7c3aed"></span>Vet <span style="background:#E30A14"></span>Nemocnice <span style="background:#22c55e"></span>Fyzio <span style="background:#3b82f6"></span>Sanitka</div>
+                    <svg viewBox="0 0 800 500" id="deMap">
+                        <!-- Schleswig-Holstein -->
+                        <path class="region" data-region="de_schleswig_holstein" d="M348,12 L352,18 L358,14 L366,10 L374,14 L380,20 L388,18 L395,22 L392,30 L398,35 L404,30 L410,34 L406,42 L412,46 L418,42 L426,46 L430,54 L424,60 L418,56 L410,62 L404,66 L396,70 L390,74 L384,78 L378,82 L372,80 L378,72 L382,64 L378,56 L372,58 L366,54 L358,58 L350,62 L342,60 L346,52 L352,44 L348,36 L342,30 L336,34 L328,30 L324,22 L330,16 L338,14 L348,12Z"/>
+                        <text class="region-label" x="378" y="38">Schleswig-</text>
+                        <text class="region-label" x="378" y="49">Holstein</text>
+                        <text class="region-count" x="378" y="61">306</text>
+                        <!-- Hamburg -->
+                        <path class="region" data-region="de_hamburg" d="M372,80 L378,78 L384,82 L388,87 L385,92 L379,94 L373,91 L370,86 L372,80Z"/>
+                        <text class="region-label" x="379" y="86">HH</text>
+                        <text class="region-count" x="379" y="95">88</text>
+                        <!-- Mecklenburg-Vorpommern -->
+                        <path class="region" data-region="de_mecklenburg_vorpommern" d="M430,54 L438,50 L448,46 L458,42 L468,40 L478,38 L486,36 L494,40 L502,38 L510,36 L518,34 L526,38 L534,42 L540,36 L548,34 L554,40 L558,48 L564,44 L570,50 L576,58 L580,66 L576,74 L570,80 L562,84 L554,88 L546,92 L538,96 L528,98 L518,100 L508,102 L498,104 L488,106 L478,108 L468,104 L458,102 L448,104 L438,108 L430,112 L424,108 L418,102 L410,98 L404,94 L398,88 L396,82 L396,78 L396,74 L396,70 L404,66 L410,62 L418,56 L424,60 L430,54Z"/>
+                        <text class="region-label" x="498" y="64">Mecklenburg-</text>
+                        <text class="region-label" x="498" y="75">Vorpommern</text>
+                        <text class="region-count" x="498" y="87">153</text>
+                        <!-- Bremen -->
+                        <path class="region" data-region="de_bremen" d="M318,114 L324,110 L330,114 L332,120 L328,126 L322,128 L316,124 L316,118 L318,114Z"/>
+                        <text class="region-label" x="324" y="118">HB</text>
+                        <text class="region-count" x="324" y="127">38</text>
+                        <!-- Niedersachsen -->
+                        <path class="region" data-region="de_niedersachsen" d="M258,84 L268,78 L278,74 L290,72 L300,76 L310,78 L320,74 L330,70 L340,66 L348,64 L350,62 L358,58 L366,54 L372,58 L378,56 L382,64 L378,72 L372,80 L370,86 L373,91 L379,94 L385,92 L388,87 L384,82 L390,74 L396,70 L396,74 L396,78 L396,82 L398,88 L404,94 L410,98 L418,102 L424,108 L430,112 L438,116 L440,124 L436,132 L430,138 L422,142 L414,148 L406,154 L398,160 L392,166 L386,172 L380,178 L374,184 L368,188 L362,192 L354,194 L346,190 L338,186 L330,180 L322,176 L316,170 L322,128 L328,126 L332,120 L330,114 L324,110 L318,114 L316,118 L316,124 L322,128 L314,136 L306,144 L298,150 L290,154 L282,158 L274,162 L266,164 L258,164 L252,158 L246,152 L240,144 L234,136 L230,126 L232,116 L236,106 L242,96 L250,88 L258,84Z"/>
+                        <text class="region-label" x="340" y="128">Niedersachsen</text>
+                        <text class="region-count" x="340" y="140">786</text>
+                        <!-- Brandenburg -->
+                        <path class="region" data-region="de_brandenburg" d="M458,102 L468,104 L478,108 L488,106 L498,104 L508,102 L518,100 L528,98 L538,96 L544,104 L548,114 L552,126 L554,138 L554,150 L552,162 L548,172 L542,182 L536,190 L528,196 L520,202 L512,208 L504,214 L496,220 L488,226 L480,230 L472,232 L464,228 L458,222 L452,216 L446,208 L442,200 L440,190 L438,180 L436,170 L436,160 L436,150 L436,140 L436,132 L440,124 L438,116 L442,110 L450,106 L458,102Z"/>
+                        <text class="region-label" x="520" y="142">Branden-</text>
+                        <text class="region-label" x="520" y="153">burg</text>
+                        <text class="region-count" x="520" y="165">284</text>
+                        <!-- Berlin -->
+                        <path class="region" data-region="de_berlin" d="M484,152 L490,148 L497,152 L500,158 L500,166 L496,172 L490,176 L484,172 L480,166 L480,158 L484,152Z"/>
+                        <text class="region-label" x="490" y="161">Berlin</text>
+                        <text class="region-count" x="490" y="172">199</text>
+                        <!-- Sachsen-Anhalt -->
+                        <path class="region" data-region="de_sachsen_anhalt" d="M386,172 L392,166 L398,160 L406,154 L414,148 L422,142 L430,138 L436,132 L436,140 L436,150 L436,160 L436,170 L438,180 L440,190 L442,200 L446,208 L452,216 L450,224 L444,230 L436,234 L428,238 L420,240 L414,238 L408,234 L400,228 L394,222 L390,214 L386,204 L382,194 L380,184 L382,178 L386,172Z"/>
+                        <text class="region-label" x="418" y="182">Sachsen-</text>
+                        <text class="region-label" x="418" y="193">Anhalt</text>
+                        <text class="region-count" x="418" y="205">195</text>
+                        <!-- Nordrhein-Westfalen -->
+                        <path class="region" data-region="de_nordrhein_westfalen" d="M234,136 L240,144 L246,152 L252,158 L258,164 L266,164 L274,162 L282,158 L290,154 L298,150 L306,144 L314,136 L316,170 L322,176 L330,180 L338,186 L346,190 L354,194 L362,192 L368,188 L374,184 L380,178 L382,184 L382,194 L386,204 L390,214 L384,222 L376,228 L368,232 L360,236 L352,240 L344,246 L336,250 L328,254 L318,258 L308,260 L298,258 L288,254 L278,248 L268,242 L260,236 L252,228 L246,220 L240,210 L236,200 L232,188 L230,176 L228,164 L228,152 L230,142 L234,136Z"/>
+                        <text class="region-label" x="306" y="200">Nordrhein-</text>
+                        <text class="region-label" x="306" y="211">Westfalen</text>
+                        <text class="region-count" x="306" y="223">1130</text>
+                        <!-- Hessen -->
+                        <path class="region" data-region="de_hessen" d="M308,260 L318,258 L328,254 L336,250 L344,246 L352,240 L360,236 L368,232 L376,228 L384,222 L390,214 L394,222 L400,228 L396,238 L392,250 L388,262 L386,272 L384,282 L382,292 L378,302 L374,312 L368,320 L362,326 L354,332 L348,334 L342,330 L336,324 L330,316 L326,308 L322,300 L318,292 L314,284 L310,276 L308,268 L308,260Z"/>
+                        <text class="region-label" x="352" y="280">Hessen</text>
+                        <text class="region-count" x="352" y="292">598</text>
+                        <!-- Thueringen -->
+                        <path class="region" data-region="de_thueringen" d="M390,214 L394,222 L400,228 L408,234 L414,238 L420,240 L428,238 L436,234 L444,230 L450,224 L454,232 L454,242 L452,252 L448,262 L444,270 L438,276 L430,282 L422,286 L414,288 L406,290 L398,286 L392,280 L388,272 L388,262 L392,250 L396,238 L390,214Z"/>
+                        <text class="region-label" x="424" y="254">Thüringen</text>
+                        <text class="region-count" x="424" y="266">208</text>
+                        <!-- Sachsen -->
+                        <path class="region" data-region="de_sachsen" d="M452,216 L458,222 L464,228 L472,232 L480,230 L488,226 L496,220 L504,214 L512,208 L520,202 L528,196 L536,190 L542,198 L548,208 L552,220 L554,232 L552,244 L548,254 L542,264 L534,272 L526,278 L518,282 L508,286 L498,288 L488,286 L478,284 L468,280 L460,274 L454,266 L450,258 L448,262 L452,252 L454,242 L454,232 L450,224 L452,216Z"/>
+                        <text class="region-label" x="504" y="244">Sachsen</text>
+                        <text class="region-count" x="504" y="256">432</text>
+                        <!-- Rheinland-Pfalz -->
+                        <path class="region" data-region="de_rheinland_pfalz" d="M234,252 L244,248 L254,244 L264,242 L274,244 L284,248 L294,254 L298,258 L308,260 L308,268 L310,276 L314,284 L318,292 L322,300 L318,308 L312,316 L306,324 L298,332 L292,338 L284,342 L278,346 L270,350 L264,352 L258,350 L252,346 L246,340 L240,332 L236,322 L232,312 L230,300 L228,288 L228,276 L230,264 L234,252Z"/>
+                        <text class="region-label" x="276" y="296">Rheinland-</text>
+                        <text class="region-label" x="276" y="307">Pfalz</text>
+                        <text class="region-count" x="276" y="319">369</text>
+                        <!-- Saarland -->
+                        <path class="region" data-region="de_saarland" d="M236,332 L240,332 L246,340 L252,346 L248,354 L240,358 L232,360 L226,354 L224,346 L228,338 L236,332Z"/>
+                        <text class="region-label" x="238" y="346">Saar-</text>
+                        <text class="region-label" x="238" y="357">land</text>
+                        <text class="region-count" x="238" y="367">83</text>
+                        <!-- Baden-Wuerttemberg -->
+                        <path class="region" data-region="de_baden_wuerttemberg" d="M258,350 L264,352 L270,350 L278,346 L284,342 L292,338 L298,332 L306,324 L312,316 L318,308 L326,308 L330,316 L336,324 L342,330 L348,334 L354,332 L352,342 L350,352 L346,362 L344,372 L340,382 L336,392 L330,400 L324,408 L316,414 L308,420 L298,424 L288,428 L278,430 L268,428 L260,424 L254,418 L248,410 L244,400 L240,390 L238,378 L240,368 L244,360 L252,354 L258,350Z"/>
+                        <text class="region-label" x="298" y="376">Baden-</text>
+                        <text class="region-label" x="298" y="387">Württemberg</text>
+                        <text class="region-count" x="298" y="399">740</text>
+                        <!-- Bayern -->
+                        <path class="region" data-region="de_bayern" d="M354,332 L362,326 L368,320 L374,312 L378,302 L382,292 L384,282 L386,272 L392,280 L398,286 L406,290 L414,288 L422,286 L430,282 L438,276 L444,270 L450,258 L454,266 L460,274 L468,280 L478,284 L488,286 L498,288 L508,286 L518,282 L524,290 L528,300 L530,312 L528,324 L524,336 L520,346 L514,356 L506,366 L498,374 L490,382 L482,390 L474,396 L466,402 L456,408 L446,414 L436,420 L426,424 L416,428 L406,430 L396,432 L386,430 L376,426 L366,420 L358,414 L350,408 L344,400 L338,392 L336,392 L340,382 L344,372 L346,362 L350,352 L352,342 L354,332Z"/>
+                        <text class="region-label" x="446" y="356">Bayern</text>
+                        <text class="region-count" x="446" y="368">1077</text>
+                    </svg>
+                    <div id="deLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                </div>
+                <div class="map-svg-wrap" id="atMapWrap" style="display:none;">
+                    <button class="zoom-back-btn" id="atZoomBack" style="display:none;">&#8592; Zpět</button>
+                    <svg viewBox="0 0 800 400" id="atMap">
+                        <!-- Vorarlberg -->
+                        <path class="region" data-region="at_vorarlberg" d="M28,125 L40,110 L55,105 L66,112 L72,125 L76,142 L78,162 L76,180 L70,195 L58,202 L45,198 L35,188 L28,173 L25,155 L25,140 L28,125Z"/>
+                        <text class="region-label" x="52" y="152">Vorarl-</text>
+                        <text class="region-label" x="52" y="165">berg</text>
+                        <text class="region-count" x="52" y="180">17</text>
+                        <!-- Tirol -->
+                        <path class="region" data-region="at_tirol" d="M78,162 L76,142 L72,125 L66,112 L80,102 L98,92 L120,84 L146,80 L172,78 L198,80 L220,86 L238,96 L252,110 L262,126 L266,142 L266,156 L262,168 L254,178 L244,186 L234,192 L224,196 L214,196 L206,192 L200,184 L196,174 L160,194 L140,200 L120,200 L102,196 L88,188 L78,180 L78,162Z"/>
+                        <text class="region-label" x="164" y="128">Tirol</text>
+                        <text class="region-count" x="164" y="142">83</text>
+                        <!-- Salzburg -->
+                        <path class="region" data-region="at_salzburg" d="M266,156 L266,142 L262,126 L252,110 L265,100 L282,92 L300,86 L320,84 L336,88 L348,96 L356,108 L360,122 L360,138 L356,156 L350,172 L340,186 L328,196 L314,204 L300,208 L286,210 L272,208 L258,204 L248,198 L238,192 L234,192 L244,186 L254,178 L262,168 L266,156Z"/>
+                        <text class="region-label" x="312" y="142">Salzburg</text>
+                        <text class="region-count" x="312" y="156">39</text>
+                        <!-- Kärnten -->
+                        <path class="region" data-region="at_kaernten" d="M160,194 L196,174 L200,184 L206,192 L214,196 L224,196 L234,192 L238,192 L248,198 L258,204 L272,208 L286,210 L300,208 L314,204 L328,196 L340,186 L350,200 L358,218 L362,238 L364,260 L362,280 L354,298 L342,312 L326,322 L308,328 L288,330 L268,328 L248,322 L230,312 L214,300 L200,286 L188,270 L178,254 L170,236 L164,218 L160,194Z"/>
+                        <text class="region-label" x="270" y="274">Kärnten</text>
+                        <text class="region-count" x="270" y="288">64</text>
+                        <!-- Oberösterreich -->
+                        <path class="region" data-region="at_oberoesterreich" d="M360,138 L360,122 L356,108 L348,96 L336,88 L320,84 L314,74 L320,62 L334,52 L352,44 L374,38 L398,36 L422,38 L444,44 L462,54 L472,66 L476,80 L474,96 L468,110 L458,122 L446,132 L432,140 L418,146 L406,148 L396,148 L388,146 L380,144 L372,146 L366,150 L360,158 L360,138Z"/>
+                        <text class="region-label" x="404" y="82">Ober-</text>
+                        <text class="region-label" x="404" y="95">österreich</text>
+                        <text class="region-count" x="404" y="110">109</text>
+                        <!-- Steiermark -->
+                        <path class="region" data-region="at_steiermark" d="M360,158 L366,150 L372,146 L380,144 L388,146 L396,148 L406,148 L418,146 L432,140 L446,132 L458,122 L466,132 L474,146 L480,162 L484,180 L486,198 L486,216 L484,234 L478,250 L470,264 L460,276 L448,286 L434,294 L418,298 L400,300 L382,298 L366,294 L364,260 L362,238 L358,218 L350,200 L340,186 L350,172 L356,156 L360,138 L360,158Z"/>
+                        <text class="region-label" x="432" y="208">Steier-</text>
+                        <text class="region-label" x="432" y="221">mark</text>
+                        <text class="region-count" x="432" y="236">118</text>
+                        <!-- Niederösterreich -->
+                        <path class="region" data-region="at_niederoesterreich" d="M458,122 L468,110 L474,96 L476,80 L472,66 L480,56 L492,46 L508,38 L528,34 L550,32 L572,34 L594,40 L614,50 L632,64 L646,82 L656,102 L662,124 L664,146 L662,166 L656,184 L646,200 L634,212 L620,222 L608,228 L596,234 L586,238 L578,244 L572,252 L568,264 L566,278 L568,292 L572,304 L576,314 L572,318 L562,310 L550,298 L538,284 L528,268 L520,252 L514,236 L510,222 L508,210 L506,202 L502,196 L498,190 L492,186 L486,198 L486,216 L484,234 L478,250 L470,264 L460,276 L448,286 L434,294 L418,298 L400,300 L382,298 L366,294 L372,288 L382,282 L396,278 L412,278 L426,282 L436,290 L440,284 L442,274 L440,264 L434,254 L426,246 L416,240 L406,236 L398,234 L392,232 L388,228 L386,222 L388,214 L394,206 L404,198 L416,190 L430,182 L444,174 L454,164 L458,150 L458,134 L458,122Z M600,124 L610,118 L622,118 L632,126 L636,138 L638,150 L636,162 L632,172 L622,178 L610,178 L600,172 L596,162 L594,150 L596,138 L600,124Z"/>
+                        <text class="region-label" x="570" y="96">Nieder-</text>
+                        <text class="region-label" x="570" y="109">österreich</text>
+                        <text class="region-count" x="570" y="124">204</text>
+                        <!-- Wien -->
+                        <path class="region" data-region="at_wien" d="M600,124 L610,118 L622,118 L632,126 L636,138 L638,150 L636,162 L632,172 L622,178 L610,178 L600,172 L596,162 L594,150 L596,138 L600,124Z"/>
+                        <text class="region-label" x="616" y="146">Wien</text>
+                        <text class="region-count" x="616" y="160">137</text>
+                        <!-- Burgenland -->
+                        <path class="region" data-region="at_burgenland" d="M608,228 L620,222 L634,212 L646,200 L654,210 L660,224 L664,242 L666,262 L666,282 L662,302 L656,318 L646,332 L634,342 L620,350 L604,356 L588,358 L574,354 L562,346 L554,334 L550,322 L558,318 L572,318 L576,314 L572,304 L568,292 L566,278 L568,264 L572,252 L578,244 L586,238 L596,234 L608,228Z"/>
+                        <text class="region-label" x="620" y="282">Burgen-</text>
+                        <text class="region-label" x="620" y="295">land</text>
+                        <text class="region-count" x="620" y="310">29</text>
+                    </svg>
+                    <div id="atLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                    <div id="genericLeaflet" class="leaflet-wrap" style="display:none; width:100%; height:400px;"></div>
+                </div>
+                <p class="map-source" id="mapSource">Zdroj: KVL ČR (vetkom.cz), ASOFYREZ ČR, PetExpert, Zlaté stránky SK</p>
+            </div>
+
+            <div class="list-col">
+                <div class="detail-default" id="mapDetailDefault">
+                    <svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#ddd" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <h3>Vyber kraj na mapě</h3>
+                    <p>Klikni na kraj pro zobrazení psích fyzioterapií, veterinárních nemocnic a sanitek v dané oblasti.</p>
+                    <div style="margin-top:20px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                        <div style="padding:14px 20px; background:#f8f9fa; border-radius:12px; text-align:center;">
+                            <div style="font-size:24px; font-weight:800; color:#E30A14; font-family:'Montserrat',sans-serif;" id="defaultTotal">4194</div>
+                            <div style="font-size:11px; color:#999; margin-top:2px;" id="defaultTotalLabel">zařízení v ČR</div>
+                        </div>
+                        <div style="padding:14px 20px; background:#f8f9fa; border-radius:12px; text-align:center;">
+                            <div style="font-size:24px; font-weight:800; color:#222; font-family:'Montserrat',sans-serif;" id="defaultRegions">14</div>
+                            <div style="font-size:11px; color:#999; margin-top:2px;">krajů pokryto</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-content" id="mapDetailContent">
+                    <div class="detail-header">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#E30A14" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <h3 id="mapRegionName"></h3>
+                        <span class="count" id="mapRegionCount"></span>
+                    </div>
+                    <div class="clinics-list" id="mapClinicsList"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer">
+        <div class="footer-bottom">
+            <p>&copy; 2025 <a href="index.html">MakejsManMatem.cz</a> &middot; Powered by ManMat</p>
+        </div>
+    </footer>
+
+    <script>
+    console.log('[MAPA v3] Script started');
+    try {
+
+    // Sync panel height with map column
+    function syncPanelHeight() {
+        var mapCol = document.querySelector('.map-col');
+        var defaultPanel = document.getElementById('mapDetailDefault');
+        if (mapCol && defaultPanel && defaultPanel.style.display !== 'none') {
+            var mapH = mapCol.offsetHeight;
+            defaultPanel.style.minHeight = mapH + 'px';
+            defaultPanel.style.display = 'flex';
+            defaultPanel.style.flexDirection = 'column';
+            defaultPanel.style.alignItems = 'center';
+            defaultPanel.style.justifyContent = 'center';
+        }
+    }
+
+    // Burger menu
+    var burgerMenu = document.getElementById('burgerMenu');
+    var mobileNav = document.getElementById('mobileNav');
+    var mobileNavOverlay = document.getElementById('mobileNavOverlay');
+    function toggleMobileMenu() {
+        var isOpen = mobileNav.classList.contains('open');
+        if (isOpen) { mobileNav.classList.remove('open'); burgerMenu.classList.remove('open'); mobileNavOverlay.classList.remove('visible'); document.body.style.overflow = ''; setTimeout(function(){ mobileNavOverlay.style.display = 'none'; }, 300);
+        } else { mobileNavOverlay.style.display = 'block'; mobileNavOverlay.offsetHeight; mobileNav.classList.add('open'); burgerMenu.classList.add('open'); mobileNavOverlay.classList.add('visible'); document.body.style.overflow = 'hidden'; }
+    }
+    burgerMenu.addEventListener('click', toggleMobileMenu);
+    mobileNavOverlay.addEventListener('click', toggleMobileMenu);
+
+    // ===== PHYSIO MAP DATA =====
+    var physioData = window.physioData || {};
+
+    // Current filter & selected region
+    var currentFilter = 'all';
+    var selectedRegionKey = null;
+    var currentCountry = 'cz';
+    var countryMeta = window.countryMeta || {};
+    var svgCountries = ['cz','sk','pl','de','at'];
+
+    // ===== DYNAMIC COUNTRY TABS =====
+    (function() {
+        var tabsEl = document.getElementById('countryTabs');
+        if (!tabsEl || !countryMeta) return;
+        // Sort: SVG countries first in order, then rest by count desc
+        var svgOrder = {cz:0,sk:1,pl:2,de:3,at:4};
+        var codes = Object.keys(countryMeta);
+        codes.sort(function(a,b) {
+            var aLc = a.toLowerCase(), bLc = b.toLowerCase();
+            var aIsSvg = svgOrder[aLc] !== undefined, bIsSvg = svgOrder[bLc] !== undefined;
+            if (aIsSvg && bIsSvg) return svgOrder[aLc] - svgOrder[bLc];
+            if (aIsSvg) return -1;
+            if (bIsSvg) return 1;
+            return (countryMeta[b].count || 0) - (countryMeta[a].count || 0);
+        });
+        var html = '';
+        codes.forEach(function(cc) {
+            var m = countryMeta[cc];
+            if (!m || (m.count || 0) < 30) return;
+            var isActive = cc.toLowerCase() === 'cz' ? ' active' : '';
+            html += '<button class="country-btn' + isActive + '" data-country="' + cc.toLowerCase() + '">' +
+                    '<span class="flag">' + (m.flag || '') + '</span> ' + (m.name || cc) +
+                    ' <span style="font-size:11px;opacity:0.6;">(' + (m.count || 0).toLocaleString() + ')</span></button>';
+        });
+        tabsEl.innerHTML = html;
+    })();
+
+    // ===== LAZY COUNTRY DATA LOADING =====
+    window.countryData = window.countryData || {};
+    function loadCountryData(cc, callback) {
+        var ccUp = cc.toUpperCase();
+        if (window.countryData[ccUp]) { callback(window.countryData[ccUp]); return; }
+        var script = document.createElement('script');
+        script.src = 'data_' + cc.toLowerCase() + '.js';
+        script.onload = function() { callback(window.countryData[ccUp] || []); };
+        script.onerror = function() { console.warn('Failed to load data for', cc); callback([]); };
+        document.head.appendChild(script);
+    }
+
+    // ===== SHOW NON-SVG COUNTRY ON LEAFLET =====
+    function showGenericCountry(cc) {
+        var ccUp = cc.toUpperCase();
+        loadCountryData(cc, function(clinics) {
+            if (!clinics || !clinics.length) {
+                document.getElementById('mapClinicsList').innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Načítání dat...</p>';
+                return;
+            }
+            // Create a virtual region in physioData
+            var regionKey = cc + '_all';
+            var meta = countryMeta[ccUp] || {};
+            physioData[regionKey] = {
+                name: meta.name || ccUp,
+                country: ccUp,
+                clinics: clinics
+            };
+            // Calculate center from clinic coordinates
+            var lats = [], lngs = [];
+            clinics.forEach(function(c) {
+                if (c.lat && c.lng) { lats.push(c.lat); lngs.push(c.lng); }
+            });
+            if (lats.length) {
+                var avgLat = lats.reduce(function(a,b){return a+b;},0) / lats.length;
+                var avgLng = lngs.reduce(function(a,b){return a+b;},0) / lngs.length;
+                var spread = Math.max(Math.max.apply(null,lats)-Math.min.apply(null,lats), Math.max.apply(null,lngs)-Math.min.apply(null,lngs));
+                var zoom = spread > 8 ? 5 : spread > 4 ? 6 : spread > 2 ? 7 : spread > 1 ? 8 : 9;
+                regionCoords[regionKey] = {lat: avgLat, lng: avgLng, zoom: zoom};
+            }
+            selectedRegionKey = regionKey;
+            renderClinics();
+            // Show Leaflet
+            showGenericLeaflet(regionKey);
+            // Update display
+            document.getElementById('mapDetailDefault').style.display = 'none';
+            document.getElementById('mapDetailContent').style.display = 'block';
+        });
+    }
+
+    function showGenericLeaflet(regionKey) {
+        var rc = regionCoords[regionKey];
+        if (!rc) return;
+        var data = physioData[regionKey];
+        if (!data) return;
+        // Remove old map
+        if (_leafletMap) { _leafletMap.remove(); _leafletMap = null; }
+        // Hide all SVG wraps
+        ['czMap','skMap','plMap','deMap','atMap'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        // Hide all leaflet divs
+        ['czLeaflet','skLeaflet','plLeaflet','deLeaflet','atLeaflet'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        var leafDiv = document.getElementById('genericLeaflet');
+        if (!leafDiv) return;
+        leafDiv.style.display = 'block';
+        _leafletDiv = 'genericLeaflet';
+        _leafletMap = L.map('genericLeaflet', {
+            attributionControl: false,
+            zoomControl: true
+        }).setView([rc.lat, rc.lng], rc.zoom);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19, subdomains: 'abcd'
+        }).addTo(_leafletMap);
+        var markerColors = {vet:'#7c3aed', hospital:'#E30A14', physio:'#22c55e', ambulance:'#3b82f6', shelter:'#f59e0b'};
+        var clinics = data.clinics;
+        if (currentFilter === 'acute') {
+            clinics = clinics.filter(function(c) { return c.type === 'hospital' || c.type === 'ambulance'; });
+        } else if (currentFilter !== 'all') {
+            clinics = clinics.filter(function(c) { return c.type === currentFilter; });
+        }
+        // Limit markers for performance (max 2000)
+        var markClinics = clinics.length > 2000 ? clinics.slice(0, 2000) : clinics;
+        markClinics.forEach(function(c) {
+            if (!c.lat || !c.lng) return;
+            var col = markerColors[c.type] || '#7c3aed';
+            var marker = L.circleMarker([c.lat, c.lng], {
+                radius: 5, fillColor: col, color: '#fff', weight: 1, fillOpacity: 0.8
+            }).addTo(_leafletMap);
+            marker.bindPopup('<strong>' + (c.name||'') + '</strong><br><span style="color:#888;">' + (c.city||'') + '</span>');
+        });
+    }
+
+    // Render clinics for the selected region with current filter
+    function renderClinics() {
+        console.log('[MAPA v3] renderClinics called. filter:', currentFilter, 'region:', selectedRegionKey);
+        if (!selectedRegionKey) return;
+        var data = physioData[selectedRegionKey];
+        if (!data) return;
+
+        var filtered = data.clinics;
+        if (currentFilter === 'acute') {
+            filtered = data.clinics.filter(function(c) { return c.type === 'hospital' || c.type === 'ambulance' || c.sos === 1; });
+        } else if (currentFilter === 'cardiology' || currentFilter === 'surgery' || currentFilter === 'xray' || currentFilter === 'physiotherapy') {
+            filtered = data.clinics.filter(function(c) { return c.spec && c.spec.indexOf(currentFilter) !== -1; });
+        } else if (currentFilter !== 'all') {
+            filtered = data.clinics.filter(function(c) { return c.type === currentFilter; });
+        }
+        console.log('[MAPA v3] Total:', data.clinics.length, 'Filtered:', filtered.length);
+
+        document.getElementById('mapDetailDefault').style.display = 'none';
+        document.getElementById('mapDetailContent').style.display = 'block';
+        document.getElementById('mapRegionName').textContent = data.name;
+        document.getElementById('mapRegionCount').textContent = filtered.length;
+
+        var html = '';
+        if (filtered.length === 0) {
+            html = '<div style="text-align:center; padding:40px 20px; color:#999;"><p>Žádné výsledky pro zvolený filtr v tomto kraji.</p></div>';
+        } else {
+            filtered.forEach(function(c, idx) { html += buildCard(c, idx); });
+        }
+        document.getElementById('mapClinicsList').innerHTML = html;
+    }
+
+    // Card click → highlight marker on map (event delegation)
+    document.getElementById('mapClinicsList').addEventListener('click', function(e) {
+        var card = e.target.closest('.clinic-card');
+        if (!card || !card.id) return;
+        var idx = parseInt(card.id.replace('clinic-card-', ''), 10);
+        if (isNaN(idx) || !_leafletMarkers[idx] || !_leafletMap) return;
+
+        // Highlight card
+        document.querySelectorAll('.clinic-card.highlighted').forEach(function(el) {
+            el.classList.remove('highlighted');
+        });
+        card.classList.add('highlighted');
+
+        // Highlight + pan to marker
+        highlightMarker(idx);
+        var ll = _leafletMarkers[idx].getLatLng();
+        _leafletMap.panTo(ll, {animate: true});
+    });
+
+    // Filter tabs - event delegation (robust)
+    document.getElementById('filterTabs').addEventListener('click', function(e) {
+        var btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        var filterValue = btn.getAttribute('data-filter');
+        console.log('[MAPA v3] Filter clicked:', filterValue);
+        var allBtns = this.querySelectorAll('.filter-btn');
+        for (var i = 0; i < allBtns.length; i++) { allBtns[i].classList.remove('active'); }
+        btn.classList.add('active');
+        currentFilter = filterValue;
+        console.log('[MAPA v3] currentFilter =', currentFilter, 'region =', selectedRegionKey);
+        renderClinics();
+        // Update Leaflet map if visible
+        if (_leafletMap && _leafletSvgId && selectedRegionKey) {
+            showLeafletMap(_leafletSvgId, selectedRegionKey);
+        }
+    });
+    console.log('[MAPA v3] Filter delegation attached');
+
+    // Country switching (currentCountry defined above with lazy loading functions)
+    document.getElementById('countryTabs').addEventListener('click', function(e) {
+        var btn = e.target.closest('.country-btn');
+        if (!btn) return;
+        var country = btn.getAttribute('data-country');
+        if (country === currentCountry) return;
+
+        // Update buttons
+        var allBtns = this.querySelectorAll('.country-btn');
+        for (var i = 0; i < allBtns.length; i++) { allBtns[i].classList.remove('active'); }
+        btn.classList.add('active');
+        currentCountry = country;
+
+        // Reset selection
+        hideLeafletMap();
+        selectedRegionKey = null;
+        currentFilter = 'all';
+        document.querySelectorAll('.region').forEach(function(r) { r.classList.remove('active'); });
+        document.querySelectorAll('#filterTabs .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelector('#filterTabs .filter-btn[data-filter="all"]').classList.add('active');
+
+        // Hide ALL map wraps
+        var svgWraps = {
+            cz: document.getElementById('czMap') ? document.getElementById('czMap').parentElement : null,
+            sk: document.getElementById('skMapWrap'),
+            pl: document.getElementById('plMapWrap'),
+            de: document.getElementById('deMapWrap'),
+            at: document.getElementById('atMapWrap')
+        };
+        for (var k in svgWraps) { if (svgWraps[k]) svgWraps[k].style.display = 'none'; }
+        document.getElementById('genericLeaflet').style.display = 'none';
+        // Hide all zoom-back buttons and legends
+        ['cz','sk','pl','de','at'].forEach(function(p) {
+            var bb = document.getElementById(p + 'ZoomBack');
+            var lg = document.getElementById(p + 'ZoomLegend');
+            if (bb) bb.style.display = 'none';
+            if (lg) lg.style.display = 'none';
+        });
+
+        var isSvg = svgCountries.indexOf(country) !== -1;
+        var meta = countryMeta[country.toUpperCase()] || {};
+
+        if (isSvg) {
+            // SVG country — show its map wrap
+            if (svgWraps[country]) svgWraps[country].style.display = 'block';
+            // Calculate stats from physioData
+            var total = 0, physio = 0, hosp = 0, amb = 0, vet = 0, regs = 0;
+            var ccUp = country.toUpperCase();
+            var prefix = country === 'cz' ? '' : country + '_';
+            for (var key in physioData) {
+                if (physioData[key].country === ccUp) {
+                    regs++;
+                    physioData[key].clinics.forEach(function(c) {
+                        total++;
+                        if (c.type === 'physio') physio++;
+                        else if (c.type === 'hospital' || c.type === 'vet_hospital') hosp++;
+                        else if (c.type === 'ambulance' || c.type === 'shelter') amb++;
+                        else vet++;
+                    });
+                }
+            }
+            document.getElementById('totalCount').textContent = total.toLocaleString();
+            document.getElementById('vetCount').textContent = vet.toLocaleString();
+            document.getElementById('physioCount').textContent = physio.toLocaleString();
+            document.getElementById('hospitalCount').textContent = hosp.toLocaleString();
+            document.getElementById('ambulanceCount').textContent = amb.toLocaleString();
+            document.getElementById('regionCount').textContent = regs.toLocaleString();
+            document.getElementById('defaultTotal').textContent = total.toLocaleString();
+            document.getElementById('defaultTotalLabel').textContent = (meta.name || ccUp) + ' — celkem';
+            document.getElementById('defaultRegions').textContent = regs;
+            document.getElementById('mapSource').textContent = 'Zdroj: OpenStreetMap, národní registry, adresáře';
+            document.getElementById('mapDetailDefault').style.display = 'block';
+            document.getElementById('mapDetailContent').style.display = 'none';
+        } else {
+            // Non-SVG country — show generic Leaflet
+            document.getElementById('totalCount').textContent = (meta.count || 0).toLocaleString();
+            document.getElementById('defaultTotal').textContent = (meta.count || 0).toLocaleString();
+            document.getElementById('defaultTotalLabel').textContent = (meta.name || country.toUpperCase()) + ' — celkem';
+            document.getElementById('mapSource').textContent = 'Zdroj: OpenStreetMap, národní registry';
+            document.getElementById('mapDetailDefault').style.display = 'none';
+            document.getElementById('mapDetailContent').style.display = 'block';
+            document.getElementById('mapClinicsList').innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Načítání dat pro ' + (meta.name || country.toUpperCase()) + '...</p>';
+            showGenericCountry(country);
+        }
+
+        setTimeout(syncPanelHeight, 50);
+        console.log('[MAPA] Country switched to:', country);
+    });
+    console.log('[MAPA] Country tabs ready (' + document.querySelectorAll('.country-btn').length + ' countries)');
+
+    // Search functionality
+    var searchInput = document.getElementById('clinicSearch');
+    var searchTimeout = null;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        var query = this.value.trim().toLowerCase();
+        if (query.length < 2) {
+            // Reset - show default view
+            document.getElementById('mapDetailDefault').style.display = 'block';
+            document.getElementById('mapDetailContent').style.display = 'none';
+            return;
+        }
+        // Show spinner immediately while debounce waits
+        document.getElementById('mapDetailDefault').style.display = 'none';
+        document.getElementById('mapDetailContent').style.display = 'block';
+        document.getElementById('mapRegionName').textContent = 'Hledám...';
+        document.getElementById('mapRegionCount').textContent = '';
+        document.getElementById('mapClinicsList').innerHTML = '<div class="loading-spinner"></div>';
+        searchTimeout = setTimeout(function() {
+            var results = [];
+            var data = physioData;
+            var countryPrefixes = {cz:true, sk:true, pl:true, de:true, at:true};
+            for (var regionKey in data) {
+                if (!data.hasOwnProperty(regionKey)) continue;
+                var prefix = regionKey.split('_')[0];
+                if (prefix.length > 2) prefix = regionKey.substring(0, 2);
+                var isCzRegion = !regionKey.match(/^(sk_|pl_|de_|at_)/);
+                var belongsToCountry = (currentCountry === 'cz' && isCzRegion) || (prefix === currentCountry);
+                if (!belongsToCountry) continue;
+                var clinics = data[regionKey].clinics || [];
+                for (var i = 0; i < clinics.length; i++) {
+                    var c = clinics[i];
+                    var match = (c.name && c.name.toLowerCase().indexOf(query) !== -1) ||
+                                (c.city && c.city.toLowerCase().indexOf(query) !== -1) ||
+                                (c.addr && c.addr.toLowerCase().indexOf(query) !== -1);
+                    if (match) {
+                        results.push(c);
+                        if (results.length >= 50) break;
+                    }
+                }
+                if (results.length >= 50) break;
+            }
+            // Show results
+            document.getElementById('mapDetailDefault').style.display = 'none';
+            document.getElementById('mapDetailContent').style.display = 'block';
+            document.getElementById('mapRegionName').textContent = 'Výsledky hledání';
+            document.getElementById('mapRegionCount').textContent = results.length + (results.length >= 50 ? '+' : '');
+            var html = '';
+            if (results.length === 0) {
+                html = '<div style="text-align:center; padding:40px 20px; color:#999;"><p>Žádné výsledky pro "' + query + '"</p></div>';
+            } else {
+                results.forEach(function(c, idx) { html += buildCard(c, idx); });
+            }
+            document.getElementById('mapClinicsList').innerHTML = html;
+            if (window.innerWidth <= 768) {
+                setTimeout(function() {
+                    document.getElementById('mapDetailContent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }, 300);
+    });
+    console.log('[MAPA v3] Search attached');
+
+    // Build clinic card HTML
+    function buildCard(c, idx) {
+        var typeLabels = {hospital:'Nemocnice',ambulance:'Sanitka',physio:'Fyzioterapie',vet:'Veterinární klinika'};
+        var badgeClasses = {hospital:'badge-hospital',ambulance:'badge-ambulance',physio:'badge-physio',vet:'badge-vet'};
+        var typeIcons = {hospital:'\uD83C\uDFE5',ambulance:'\uD83D\uDE91',physio:'\uD83D\uDC3E',vet:'\uD83E\uDE7A'};
+        var typeLabel = typeLabels[c.type] || 'Veterina';
+        var badgeClass = badgeClasses[c.type] || 'badge-vet';
+        var typeIcon = typeIcons[c.type] || '\uD83E\uDE7A';
+        var isNonstop = c.hours && (c.hours.indexOf('NONSTOP') !== -1 || c.hours.indexOf('24/7') !== -1);
+
+        var isAcute = c.type === 'hospital' || c.type === 'ambulance';
+        var isSOS = c.sos === 1;
+        var borderStyle = isSOS ? 'border-left:3px solid #dc2626;' : isNonstop ? 'border-left:3px solid #16a34a;' : isAcute ? 'border-left:3px solid #dc2626;' : '';
+
+        var cardId = typeof idx === 'number' ? ' id="clinic-card-' + idx + '"' : '';
+        var html = '<div class="clinic-card"' + cardId + (borderStyle ? ' style="' + borderStyle + '"' : '') + '>';
+        if (isSOS) {
+            html += '<div class="acute-banner" style="background:linear-gradient(135deg,#dc2626,#b91c1c);"><span class="acute-dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Pohotovost 24/7</div>';
+        } else if (isAcute) {
+            html += '<div class="acute-banner"><span class="acute-dot"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Bereme akutní případy</div>';
+        }
+        html += '<span class="type-badge ' + badgeClass + '">' + typeIcon + ' ' + typeLabel + '</span>';
+        if (c.spec && c.spec.length) {
+            var specLabels = {cardiology:'Kardiologie',surgery:'Chirurgie',xray:'RTG',physiotherapy:'Fyzioterapie',dentistry:'Stomatologie',ophthalmology:'Oftalmologie'};
+            html += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin:4px 0;">';
+            c.spec.forEach(function(s) {
+                html += '<span style="font-size:10px;background:#eef2ff;color:#4f46e5;padding:2px 6px;border-radius:4px;font-weight:600;">' + (specLabels[s]||s) + '</span>';
+            });
+            html += '</div>';
+        }
+        if (c.rsv) {
+            html += '<span style="font-size:10px;background:#ecfdf5;color:#059669;padding:2px 6px;border-radius:4px;font-weight:600;">Online rezervace</span> ';
+        }
+        html += '<h4>' + c.name + '</h4>';
+        html += '<p class="city">' + c.city + '</p>';
+        html += '<p class="desc">' + (c.desc || '') + '</p>';
+
+        // Hours - prominent display
+        if (c.hours) {
+            var isNonstop = c.hours.indexOf('NONSTOP') !== -1 || c.hours.indexOf('24/7') !== -1;
+            if (isNonstop) {
+                html += '<div class="hours-row hours-nonstop">';
+                html += '<span class="nonstop-dot"></span>';
+                html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+                html += '<span class="nonstop-label">' + c.hours + '</span>';
+                html += '</div>';
+            } else {
+                html += '<div class="hours-row">';
+                html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+                html += c.hours;
+                html += '</div>';
+            }
+        }
+
+        // Meta info
+        html += '<div class="clinic-meta">';
+        if (c.tel) {
+            html += '<div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> ' + c.tel + '</div>';
+        }
+        html += '</div>';
+
+        // Action buttons
+        html += '<div class="clinic-actions">';
+        if (c.addr && c.addr !== 'Výjezdová služba') {
+            var encodedAddr = encodeURIComponent(c.addr);
+            var googleUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodedAddr;
+            var wazeUrl = 'https://waze.com/ul?q=' + encodedAddr + '&navigate=yes';
+            html += '<a href="' + googleUrl + '" target="_blank" rel="noopener" class="btn-nav"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Google Maps</a>';
+            html += '<a href="' + wazeUrl + '" target="_blank" rel="noopener" class="btn-nav" style="background:#33ccff;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> Waze</a>';
+        }
+        if (c.url && c.url !== '#') {
+            html += '<a href="' + c.url + '" target="_blank" rel="noopener" class="btn-web" style="background:#16a34a;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Objednat</a>';
+        }
+        if (c.url && c.url !== '#') {
+            html += '<a href="' + c.url + '" target="_blank" rel="noopener" class="btn-web"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg> Web</a>';
+        }
+        if (c.email) {
+            html += '<a href="mailto:' + c.email + '" class="btn-web" style="background:#8b5cf6;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Napsat</a>';
+        }
+        if (c.wa) {
+            html += '<a href="https://wa.me/' + c.wa + '" target="_blank" rel="noopener" class="btn-web" style="background:#25D366;"><svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.96 9.96 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg> WhatsApp</a>';
+        }
+        if (c.tel) {
+            var telPrefix = (c.tel && c.tel.indexOf('+') === 0) ? '' : '+420';
+            if (isSOS) {
+                html += '<a href="tel:' + telPrefix + c.tel.replace(/\s/g, '') + '" class="btn-tel" style="background:#dc2626;font-size:14px;padding:10px 16px;font-weight:700;"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> VOLAT HNED</a>';
+            } else {
+                html += '<a href="tel:' + telPrefix + c.tel.replace(/\s/g, '') + '" class="btn-tel"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg> Volat</a>';
+            }
+        }
+        html += '</div>';
+        html += '</div>';
+        return html;
+    }
+
+    // ===== LEAFLET MAP SYSTEM =====
+    var _leafletMap = null;   // current Leaflet map instance
+    var _leafletDiv = null;   // current Leaflet div id
+    var _leafletSvgId = null; // SVG id that was hidden
+    var _leafletMarkers = []; // array of marker references for card<->map sync
+    var _userLocation = null; // {lat, lng} from geolocation
+    var _activeMarkerIndex = -1;
+
+    function highlightMarker(idx) {
+        // Reset previous
+        if (_activeMarkerIndex >= 0 && _leafletMarkers[_activeMarkerIndex]) {
+            var prevEl = _leafletMarkers[_activeMarkerIndex].getElement();
+            if (prevEl) {
+                var prevDot = prevEl.querySelector('div');
+                if (prevDot && prevDot.dataset.origStyle) prevDot.style.cssText = prevDot.dataset.origStyle;
+            }
+        }
+        // Highlight new
+        _activeMarkerIndex = idx;
+        if (_leafletMarkers[idx]) {
+            var el = _leafletMarkers[idx].getElement();
+            if (el) {
+                var dot = el.querySelector('div');
+                if (dot) {
+                    if (!dot.dataset.origStyle) dot.dataset.origStyle = dot.style.cssText;
+                    dot.style.width = '20px';
+                    dot.style.height = '20px';
+                    dot.style.border = '3px solid #E30A14';
+                    dot.style.boxShadow = '0 0 8px rgba(227,10,20,0.5)';
+                    dot.style.zIndex = '1000';
+                }
+            }
+            _leafletMarkers[idx].openPopup();
+        }
+    }
+
+    // Region center coordinates and zoom levels
+    var regionCoords = window.regionCoords || {};
+
+    // City coordinates for marker placement
+    var cityCoords = {
+        // CZ cities
+        'Praha':[50.08,14.43],'Praha 1':[50.09,14.42],'Praha 2':[50.07,14.43],'Praha 3':[50.08,14.45],
+        'Praha 4':[50.04,14.43],'Praha 5':[50.07,14.40],'Praha 6':[50.10,14.36],'Praha 7':[50.10,14.43],
+        'Praha 8':[50.11,14.47],'Praha 9':[50.13,14.50],'Praha 10':[50.07,14.49],
+        'Brno':[49.20,16.61],'Plzeň':[49.75,13.38],'Ostrava':[49.82,18.26],'Olomouc':[49.59,17.25],
+        'Liberec':[50.77,15.06],'České Budějovice':[48.97,14.47],'Hradec Králové':[50.21,15.83],
+        'Pardubice':[50.04,15.78],'Ústí nad Labem':[50.66,14.04],'Zlín':[49.23,17.67],
+        'Havířov':[49.78,18.43],'Kladno':[50.14,14.10],'Most':[50.50,13.64],'Opava':[49.94,17.90],
+        'Frýdek-Místek':[49.69,18.35],'Karviná':[49.85,18.54],'Jihlava':[49.40,15.59],
+        'Teplice':[50.64,13.82],'Děčín':[50.78,14.21],'Karlovy Vary':[50.23,12.87],
+        'Jablonec nad Nisou':[50.72,15.17],'Mladá Boleslav':[50.41,14.91],'Prostějov':[49.47,17.11],
+        'Přerov':[49.46,17.45],'Česká Lípa':[50.69,14.54],'Třebíč':[49.21,15.88],
+        'Třinec':[49.68,18.67],'Tábor':[49.41,14.66],'Znojmo':[48.86,16.05],
+        'Příbram':[49.69,14.01],'Cheb':[50.08,12.37],'Orlová':[49.85,18.43],
+        'Chomutov':[50.46,13.42],'Šumperk':[49.97,16.97],'Kroměříž':[49.30,17.39],
+        'Vsetín':[49.34,17.99],'Valašské Meziříčí':[49.47,17.97],'Litoměřice':[50.53,14.13],
+        'Nový Jičín':[49.59,18.01],'Kopřivnice':[49.60,18.15],'Kutná Hora':[49.95,15.27],
+        'Blansko':[49.36,16.65],'Vyškov':[49.28,16.99],'Hodonín':[48.85,17.13],
+        'Břeclav':[48.76,16.88],'Sokolov':[50.18,12.64],'Žďár nad Sázavou':[49.56,15.94],
+        'Uherské Hradiště':[49.07,17.46],'Strakonice':[49.26,13.90],'Písek':[49.31,14.15],
+        'Český Krumlov':[48.81,14.32],'Jindřichův Hradec':[49.14,15.00],'Pelhřimov':[49.43,15.22],
+        'Havlíčkův Brod':[49.61,15.58],'Svitavy':[49.76,16.47],'Chrudim':[49.95,15.80],
+        'Klatovy':[49.40,13.30],'Domažlice':[49.44,12.93],'Rokycany':[49.74,13.59],
+        'Louny':[50.36,13.80],'Rakovník':[50.10,13.73],'Beroun':[49.96,14.07],
+        'Kolín':[50.03,15.20],'Nymburk':[50.19,15.04],'Mělník':[50.35,14.47],
+        'Benešov':[49.78,14.69],'Trutnov':[50.56,15.91],'Náchod':[50.42,16.16],
+        'Rychnov nad Kněžnou':[50.16,16.28],'Jičín':[50.44,15.35],'Semily':[50.60,15.33],
+        'Česká Třebová':[49.90,16.45],'Ústí nad Orlicí':[49.97,16.39],
+        'Jeseník':[50.23,17.20],'Bruntál':[49.99,17.46],
+        'Uherský Brod':[49.02,17.65],'Luhačovice':[49.10,17.76],
+        'Nový Bor':[50.76,14.56],'Turnov':[50.59,15.16],
+        'Prachatice':[49.01,13.99],'Sušice':[49.23,13.52],
+        'Velké Meziříčí':[49.36,16.01],'Bystřice nad Pernštejnem':[49.52,16.26],
+        'Boskovice':[49.49,16.66],'Kyjov':[49.01,17.12],
+        'Frenštát pod Radhoštěm':[49.55,18.21],'Rožnov pod Radhoštěm':[49.46,18.14],
+        // SK cities
+        'Bratislava':[48.15,17.11],'Košice':[48.72,21.26],'Žilina':[49.22,18.74],
+        'Banská Bystrica':[48.74,19.15],'Nitra':[48.31,18.09],'Trnava':[48.38,17.59],
+        'Trenčín':[48.89,18.04],'Prešov':[49.00,21.24],'Martin':[49.07,18.92],
+        'Poprad':[49.06,20.30],'Zvolen':[48.58,19.13],'Považská Bystrica':[49.12,18.42],
+        'Nové Zámky':[47.99,18.16],'Komárno':[47.76,18.13],'Levice':[48.22,18.60],
+        'Michalovce':[48.76,21.92],'Spišská Nová Ves':[48.95,20.57],'Humenné':[48.94,21.91],
+        'Bardejov':[49.29,21.28],'Liptovský Mikuláš':[49.08,19.61],
+        'Ružomberok':[49.08,19.31],'Topoľčany':[48.56,18.18],
+        'Piešťany':[48.59,17.83],'Dunajská Streda':[47.99,17.62],
+        'Galanta':[48.19,17.73],'Skalica':[48.85,17.23],
+        'Lučenec':[48.33,19.67],'Rimavská Sobota':[48.38,20.02],
+        'Dolný Kubín':[49.21,19.30],'Čadca':[49.44,18.79],
+        'Svidník':[49.31,21.57],'Vranov nad Topľou':[48.89,21.68],
+        'Rožňava':[48.66,20.53],'Trebišov':[48.63,21.72],
+        'Snina':[48.99,22.15],'Stará Ľubovňa':[49.30,20.69],
+        'Kežmarok':[49.14,20.43],'Sabinov':[49.10,21.10],
+        // PL cities
+        'Warszawa':[52.23,21.01],'Kraków':[50.06,19.94],'Wrocław':[51.10,17.04],
+        'Łódź':[51.77,19.46],'Poznań':[52.41,16.93],'Gdańsk':[54.35,18.65],
+        'Szczecin':[53.43,14.55],'Bydgoszcz':[53.12,18.01],'Lublin':[51.25,22.57],
+        'Białystok':[53.13,23.16],'Katowice':[50.26,19.03],'Gdynia':[54.52,18.53],
+        'Częstochowa':[50.81,19.12],'Radom':[51.40,21.15],'Sosnowiec':[50.29,19.13],
+        'Toruń':[53.01,18.60],'Kielce':[50.87,20.63],'Rzeszów':[50.04,22.00],
+        'Gliwice':[50.29,18.67],'Zabrze':[50.32,18.79],'Olsztyn':[53.78,20.49],
+        'Bielsko-Biała':[49.82,19.05],'Bytom':[50.35,18.92],'Zielona Góra':[51.94,15.51],
+        'Rybnik':[50.10,18.54],'Ruda Śląska':[50.26,18.86],'Tychy':[50.13,18.98],
+        'Opole':[50.67,17.93],'Gorzów Wielkopolski':[52.73,15.23],'Elbląg':[54.17,19.40],
+        'Płock':[52.55,19.71],'Dąbrowa Górnicza':[50.32,19.19],'Wałbrzych':[50.77,16.28],
+        'Włocławek':[52.66,19.07],'Tarnów':[50.01,20.99],'Chorzów':[50.30,18.95],
+        'Koszalin':[54.19,16.17],'Kalisz':[51.76,18.09],'Legnica':[51.21,16.16],
+        'Grudziądz':[53.48,18.75],'Jaworzno':[50.20,19.27],'Słupsk':[54.46,17.03],
+        'Jastrzębie-Zdrój':[49.95,18.60],'Nowy Sącz':[49.62,20.69],'Jelenia Góra':[50.90,15.74],
+        'Siedlce':[52.17,22.29],'Mysłowice':[50.24,19.17],'Konin':[52.22,18.25],
+        'Piła':[53.15,16.74],'Piotrków Trybunalski':[51.41,19.70],'Ostrów Wielkopolski':[51.65,17.81],
+        'Lubin':[51.40,16.20],'Inowrocław':[52.80,18.26],'Suwałki':[54.11,22.93],
+        'Stargard':[53.34,15.05],'Gniezno':[52.54,17.60],'Ostrowiec Świętokrzyski':[50.93,21.39],
+        'Siemianowice Śląskie':[50.31,19.03],'Głogów':[51.66,16.08],
+        'Pabianice':[51.66,19.35],'Leszno':[51.84,16.58],'Żory':[50.05,18.70],
+        'Pruszków':[52.17,20.81],'Stalowa Wola':[50.58,22.05],'Zamość':[50.72,23.25],
+        'Łomża':[53.18,22.07],'Ełk':[53.83,22.36],'Mielec':[50.29,21.43],
+        'Tarnobrzeg':[50.57,21.68],'Przemyśl':[49.78,22.77],'Sanok':[49.55,22.21],
+        'Krosno':[49.69,21.77],'Nowy Targ':[49.48,20.03],'Zakopane':[49.30,19.95],
+        'Żywiec':[49.69,19.19],'Oświęcim':[50.04,19.24],'Chrzanów':[50.14,19.40],
+        'Wadowice':[49.88,19.49],'Wieliczka':[49.99,20.07],'Bochnia':[49.97,20.43],
+        'Myślenice':[49.83,19.94],'Gorlice':[49.66,21.16],'Limanowa':[49.71,20.43],
+        'Olkusz':[50.28,19.57],'Miechów':[50.36,20.03],'Proszowice':[50.19,20.30],
+        'Skawina':[49.97,19.83],'Andrychów':[49.86,19.34],
+        'Piaseczno':[52.08,21.02],'Legionowo':[52.40,20.93],'Otwock':[52.11,21.26],
+        'Wołomin':[52.35,21.24],'Mińsk Mazowiecki':[52.18,21.56],
+        'Grodzisk Mazowiecki':[52.11,20.63],'Żyrardów':[52.05,20.45],
+        'Sochaczew':[52.23,20.24],'Ciechanów':[52.88,20.62],
+        'Ostrołęka':[53.08,21.57],'Garwolin':[51.90,21.62],
+        'Skierniewice':[51.95,20.15],'Kutno':[52.23,19.36],'Sieradz':[51.60,18.73],
+        'Bełchatów':[51.36,19.36],'Radomsko':[51.07,19.45],'Tomaszów Mazowiecki':[51.53,20.01],
+        'Zgierz':[51.85,19.41],'Wieluń':[51.22,18.57],
+        'Nowa Sól':[51.80,15.72],'Żary':[51.64,15.14],'Świebodzin':[52.25,15.53],
+        'Kędzierzyn-Koźle':[50.35,18.22],'Nysa':[50.47,17.34],'Brzeg':[50.86,17.47],
+        'Kluczbork':[50.97,18.22],'Namysłów':[51.08,17.72],
+        'Sopot':[54.44,18.56],'Wejherowo':[54.60,18.23],'Tczew':[54.09,18.80],
+        'Starogard Gdański':[53.96,18.53],'Brodnica':[53.26,19.40],
+        'Kowalewo Pomorskie':[53.16,18.89],'Grudziądz':[53.48,18.75],
+        'Augustów':[53.84,23.00],'Giżycko':[54.04,21.77],'Mrągowo':[53.87,21.31],
+        'Iława':[53.60,19.57],'Ostróda':[53.70,19.97],'Biała Podlaska':[52.03,23.12],
+        'Chełm':[51.13,23.47],'Puławy':[51.42,21.97],'Kraśnik':[50.92,22.22],
+        'Żagań':[51.62,15.32],'Dzierżoniów':[50.73,16.65],'Głogów':[51.66,16.08],
+        'Świdnica':[50.84,16.49],'Oława':[50.95,17.29],'Nowa Ruda':[50.58,16.50],
+        'Świnoujście':[53.91,14.25],'Kołobrzeg':[54.18,15.58],
+        'Starachowice':[51.04,21.07],'Skarżysko-Kamienna':[51.12,20.86],
+        'Jędrzejów':[50.64,20.30],'Tomaszów Mazowiecki':[51.53,20.01],
+        'Skierniewice':[51.96,20.16],'Przemyśl':[49.78,22.77],
+        'Krosno':[49.69,21.77],'Tarnobrzeg':[50.57,21.68],'Mielec':[50.29,21.43],
+        'WARSZAWA':[52.23,21.01],'KRAKÓW':[50.06,19.94],
+        // DE cities
+        'Berlin':[52.52,13.40],'Hamburg':[53.55,10.00],'München':[48.14,11.58],
+        'Köln':[50.94,6.96],'Frankfurt am Main':[50.11,8.68],'Stuttgart':[48.78,9.18],
+        'Düsseldorf':[51.23,6.77],'Leipzig':[51.34,12.37],'Dortmund':[51.51,7.47],
+        'Essen':[51.46,7.01],'Bremen':[53.08,8.80],'Dresden':[51.05,13.74],
+        'Hannover':[52.37,9.74],'Nürnberg':[49.45,11.08],'Duisburg':[51.43,6.76],
+        'Bochum':[51.48,7.22],'Wuppertal':[51.26,7.17],'Bielefeld':[52.02,8.53],
+        'Bonn':[50.73,7.10],'Münster':[51.96,7.63],'Mannheim':[49.49,8.47],
+        'Karlsruhe':[49.01,8.40],'Augsburg':[48.37,10.90],'Wiesbaden':[50.08,8.24],
+        'Mönchengladbach':[51.19,6.44],'Gelsenkirchen':[51.52,7.10],'Aachen':[50.78,6.08],
+        'Braunschweig':[52.27,10.52],'Chemnitz':[50.83,12.92],'Kiel':[54.32,10.14],
+        'Halle (Saale)':[51.50,11.97],'Magdeburg':[52.13,11.63],'Freiburg im Breisgau':[47.99,7.85],
+        'Krefeld':[51.34,6.56],'Mainz':[50.00,8.27],'Lübeck':[53.87,10.69],
+        'Erfurt':[50.98,11.03],'Oberhausen':[51.47,6.86],'Rostock':[54.09,12.10],
+        'Kassel':[51.32,9.50],'Hagen':[51.36,7.47],'Potsdam':[52.40,13.07],
+        'Saarbrücken':[49.24,6.99],'Hamm':[51.68,7.82],'Ludwigshafen':[49.48,8.44],
+        'Oldenburg':[53.14,8.21],'Mülheim an der Ruhr':[51.43,6.88],'Osnabrück':[52.28,8.04],
+        'Leverkusen':[51.05,7.00],'Heidelberg':[49.40,8.69],'Darmstadt':[49.87,8.65],
+        'Solingen':[51.17,7.08],'Regensburg':[49.01,12.10],'Herne':[51.54,7.22],
+        'Paderborn':[51.72,8.75],'Neuss':[51.20,6.69],'Ingolstadt':[48.76,11.42],
+        'Offenbach am Main':[50.10,8.76],'Würzburg':[49.79,9.95],'Ulm':[48.40,9.99],
+        'Heilbronn':[49.14,9.22],'Pforzheim':[48.89,8.70],'Wolfsburg':[52.42,10.79],
+        'Göttingen':[51.53,9.94],'Bottrop':[51.52,6.93],'Trier':[49.75,6.64],
+        'Reutlingen':[48.49,9.21],'Koblenz':[50.36,7.59],'Bremerhaven':[53.54,8.58],
+        'Erlangen':[49.60,11.00],'Remscheid':[51.18,7.19],'Bergisch Gladbach':[50.99,7.14],
+        'Jena':[50.93,11.59],'Cottbus':[51.76,14.33],'Moers':[51.45,6.63],
+        'Siegen':[50.87,8.02],'Hildesheim':[52.15,9.95],'Salzgitter':[52.15,10.33],
+        'Gütersloh':[51.91,8.38],'Schwerin':[53.63,11.41],'Witten':[51.44,7.34],
+        'Gera':[50.88,12.08],'Iserlohn':[51.37,7.69],'Konstanz':[47.66,9.18],
+        'Ratingen':[51.30,6.85],'Lünen':[51.62,7.52],'Flensburg':[54.80,9.43],
+        'Bamberg':[49.89,10.89],'Bayreuth':[49.95,11.58],'Marburg':[50.81,8.77],
+        'Villingen-Schwenningen':[48.06,8.45],'Landshut':[48.54,12.15],
+        'Rosenheim':[47.86,12.13],'Passau':[48.57,13.46],'Straubing':[48.88,12.57],
+        'Deggendorf':[48.83,12.96],'Amberg':[49.44,11.86],'Weiden':[49.68,12.16],
+        'Schweinfurt':[50.05,10.23],'Aschaffenburg':[49.98,9.15],'Coburg':[50.26,10.96],
+        'Hof':[50.31,11.91],'Fulda':[50.55,9.68],'Gießen':[50.58,8.68],
+        'Weimar':[50.98,11.33],'Neumünster':[54.07,9.98],'Neubrandenburg':[53.56,13.26],
+        'Greifswald':[54.10,13.38],'Stralsund':[54.31,13.09],'Wismar':[53.89,11.46],
+        'Dessau-Roßlau':[51.83,12.24],'Wittenberg':[51.87,12.64],
+        'Stendal':[52.60,11.86],'Halberstadt':[51.90,11.05],'Wernigerode':[51.83,10.79],
+        'Brandenburg an der Havel':[52.41,12.55],'Frankfurt (Oder)':[52.35,14.55],
+        'Eberswalde':[52.83,13.82],'Oranienburg':[52.75,13.24],
+        'Tübingen':[48.52,9.06],'Ravensburg':[47.78,9.61],'Friedrichshafen':[47.65,9.48],
+        'Tuttlingen':[47.98,8.82],'Lörrach':[47.62,7.66],'Offenburg':[48.47,7.94],
+        'Baden-Baden':[48.76,8.24],'Göppingen':[48.70,9.65],'Esslingen':[48.74,9.31],
+        'Ludwigsburg':[48.90,9.20],'Waiblingen':[48.83,9.32],'Sindelfingen':[48.71,9.00],
+        'Böblingen':[48.68,9.02],'Leonberg':[48.80,9.02],
+        'Ahlen':[51.76,7.89],'Alzenau':[50.09,9.07],'Aschendorf':[52.98,7.34],
+        'Asperg':[48.91,9.13],'Babenhausen':[49.96,8.96],'Bad Dürrheim':[48.06,8.53],
+        'Bad Nenndorf':[52.34,9.38],'Borstel-Hohenraden':[53.67,9.81],
+        'Bretzenheim':[49.96,7.90],'Burgschwalbach':[50.32,8.10],
+        'Döbeln':[51.12,13.11],'Egelsbach':[49.97,8.67],'Eislingen':[48.69,9.71],
+        'Eschborn':[50.14,8.57],'Frankenhardt':[49.09,9.96],'Frankfurt':[50.11,8.68],
+        'Gerdau':[52.94,10.33],'Glandorf':[52.08,7.99],'Gärtringen':[48.64,8.90],
+        'Haag i. OB':[48.16,12.18],'Haan':[51.19,7.01],'Haar':[48.11,11.73],
+        'Heidenrod':[50.17,7.96],'Hermannsburg':[52.83,10.09],
+        'Hofheim':[50.09,8.45],'Hohnstorf':[53.37,10.56],'Holle':[52.09,10.17],
+        'Ingelheim':[49.97,8.06],'Karlsfeld':[48.22,11.47],'Kemberg':[51.78,12.63],
+        'Kempten':[47.73,10.32],'Kirchhain':[50.83,8.93],'Kleve':[51.79,6.14],
+        'Korntal':[48.83,9.12],'Königs Wusterhausen':[52.30,13.63],
+        'Küssaberg':[47.59,8.35],'Lahstedt':[52.19,10.24],'Landolfshausen':[51.58,10.10],
+        'Linkenheim-Hochstetten':[49.08,8.41],'Lippstadt':[51.67,8.34],
+        'Lüneburg':[53.25,10.41],'Mahlow':[52.36,13.41],'Markkleeberg':[51.28,12.37],
+        'Mayen':[50.33,7.23],'Menden':[51.44,7.80],
+        'Mühlenbecker Land':[52.67,13.38],'Neu-Ulm':[48.39,10.01],
+        'Niederöfflingen':[50.05,6.92],'Norderstedt':[53.71,10.00],
+        'Oberhaching':[48.03,11.60],'Oedheim':[49.24,9.25],
+        'Posthausen':[53.10,9.01],'Preußisch Oldendorf':[52.31,8.50],
+        'Quickborn':[53.73,9.91],'Recklinghausen':[51.61,7.20],
+        'Remshalden':[48.81,9.38],'Rutesheim':[48.81,8.95],
+        'Sankt Augustin':[50.77,7.19],'Schneverdingen':[53.12,9.80],
+        'Schorndorf':[48.81,9.53],'Schwaigern':[49.15,9.06],
+        'Simmerath':[50.61,6.29],'Speyer':[49.32,8.43],
+        'Steinhöring':[48.08,12.03],'Stockelsdorf':[53.89,10.65],
+        'Uhingen':[48.71,9.59],'Untereisenheim':[49.87,10.11],
+        'Waldshut-Tiengen':[47.62,8.21],'Weingarten':[47.81,9.64],
+        'Wesel':[51.66,6.62],'Wiesloch':[49.30,8.70],
+        'Worms':[49.63,8.37],'Zorneding':[48.08,11.83],
+        // AT cities
+        'Wien':[48.21,16.37],'Graz':[47.07,15.44],'Linz':[48.31,14.29],
+        'Salzburg':[47.80,13.04],'Innsbruck':[47.26,11.39],'Klagenfurt':[46.62,14.31],
+        'Villach':[46.61,13.85],'Wels':[48.16,14.03],'Sankt Pölten':[48.20,15.63],
+        'Dornbirn':[47.41,9.74],'Wiener Neustadt':[47.81,16.24],'Steyr':[48.04,14.42],
+        'Feldkirch':[47.24,9.60],'Bregenz':[47.50,9.75],'Leonding':[48.28,14.25],
+        'Klosterneuburg':[48.31,16.32],'Baden bei Wien':[48.01,16.23],
+        'Leoben':[47.38,15.09],'Krems':[48.41,15.61],'Traun':[48.22,14.24],
+        'Amstetten':[48.12,14.87],'Lustenau':[47.43,9.66],'Kapfenberg':[47.44,15.29],
+        'Mödling':[48.09,16.28],'Hallein':[47.68,13.09],'Kufstein':[47.58,12.17],
+        'Braunau am Inn':[48.26,13.03],'Schwechat':[48.14,16.47],
+        'Spittal an der Drau':[46.80,13.50],'Saalfelden':[47.43,12.85],
+        'Ansfelden':[48.21,14.29],'Stockerau':[48.38,16.21],
+        'Ternitz':[47.72,16.04],'Perchtoldsdorf':[48.12,16.27],
+        'Tulln':[48.33,15.88],'Bruck an der Mur':[47.41,15.27],
+        'Eisenstadt':[47.85,16.52],'Wolfsberg':[46.84,14.84],
+        'Korneuburg':[48.35,16.33],'Neunkirchen':[47.73,16.08],
+        'Hard':[47.49,9.69],'Lienz':[46.83,12.77],
+        'Hall in Tirol':[47.28,11.51],'Schwaz':[47.35,11.71],
+        'Bischofshofen':[47.42,13.22],'Gmunden':[47.92,13.80],
+        'Vöcklabruck':[48.00,13.66],'Ried im Innkreis':[48.21,13.49],
+        'Bad Ischl':[47.71,13.62],'Zwettl':[48.60,15.17],
+        'Hartberg':[47.28,15.97],'Judenburg':[47.17,14.66],
+        'Oberwart':[47.29,16.20],'Güssing':[47.06,16.32],
+        'Jennersdorf':[46.94,16.14],
+        // Additional AT cities
+        'Seiersberg-Pirka':[47.01,15.40],'Feldkirchen bei Graz':[47.07,15.45],
+        'Feldkirchen in Kärnten':[46.72,14.10],'Krems an der Donau':[48.41,15.61],
+        'Tulln an der Donau':[48.33,15.88],'St. Pölten':[48.20,15.63],
+        'St. Johann im Pongau':[47.35,13.20],'Seekirchen':[47.90,13.13],
+        'Oberalm':[47.72,13.09],'Neusiedl am See':[47.95,16.84],
+        'Mattersburg':[47.73,16.40],'Völkermarkt':[46.66,14.64],
+        'Imst':[47.24,10.74],'Reutte':[47.48,10.72],
+        'Landeck':[47.14,10.57],'Wörgl':[47.49,12.06],
+        'Zell am See':[47.32,12.80],'Bludenz':[47.15,9.82],
+        'Hohenems':[47.37,9.69],
+        // Additional DE cities
+        'Görlitz':[51.15,14.99],'Bautzen':[51.18,14.42],
+        'Freiberg':[50.92,13.34],'Plauen':[50.50,12.13],
+        'Zwickau':[50.72,12.49],'Merseburg':[51.35,11.99],
+        'Bernburg':[51.79,11.74],'Lutherstadt Wittenberg':[51.87,12.64],
+        'Falkensee':[52.56,13.09],'Gotha':[50.95,10.70],
+        'Eisenach':[50.98,10.31],'Nordhausen':[51.50,10.79],
+        'Mühlhausen':[51.21,10.45],'Suhl':[50.61,10.69],
+        'Güstrow':[53.80,12.18],'Waren (Müritz)':[53.52,12.68],
+        'Meißen':[51.16,13.47]
+    };
+
+    // Map SVG id prefix to Leaflet div id
+    var svgToLeaflet = {
+        czMap: 'czLeaflet',
+        skMap: 'skLeaflet',
+        plMap: 'plLeaflet',
+        deMap: 'deLeaflet',
+        atMap: 'atLeaflet'
+    };
+
+    function showLeafletMap(svgId, regionKey) {
+        try {
+        var rc = regionCoords[regionKey];
+        if (!rc) { console.warn('[LEAFLET] No coords for', regionKey); return; }
+        var data = physioData[regionKey];
+        if (!data) return;
+
+        var leafletId = svgToLeaflet[svgId];
+        if (!leafletId) return;
+
+        // Remove old map FIRST
+        if (_leafletMap) {
+            _leafletMap.remove();
+            _leafletMap = null;
+        }
+        if (_leafletDiv && _leafletDiv !== leafletId) {
+            var oldDiv = document.getElementById(_leafletDiv);
+            if (oldDiv) oldDiv.style.display = 'none';
+        }
+        // Also restore old SVG if different
+        if (_leafletSvgId && _leafletSvgId !== svgId) {
+            var oldSvg = document.getElementById(_leafletSvgId);
+            if (oldSvg) oldSvg.style.display = 'block';
+        }
+
+        // Hide SVG
+        var svg = document.getElementById(svgId);
+        if (svg) svg.style.display = 'none';
+
+        // Show Leaflet div
+        var leafDiv = document.getElementById(leafletId);
+        if (!leafDiv) return;
+        leafDiv.style.display = 'block';
+
+        // Show back button and legend
+        var pfx = svgId.replace('Map', '');
+        var btn = document.getElementById(pfx + 'ZoomBack');
+        var leg = document.getElementById(pfx + 'ZoomLegend');
+        if (btn) btn.style.display = 'block';
+        if (leg) leg.style.display = 'block';
+
+        _leafletDiv = leafletId;
+        _leafletSvgId = svgId;
+
+        // Create new Leaflet map - clean minimal style
+        _leafletMap = L.map(leafletId, {
+            attributionControl: false,
+            zoomControl: true
+        }).setView([rc.lat, rc.lng], rc.zoom);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(_leafletMap);
+
+        // Marker colors by type
+        var markerColors = {vet:'#7c3aed', hospital:'#E30A14', physio:'#22c55e', ambulance:'#3b82f6'};
+        var typeLabels = {vet:'Vet', hospital:'Nemocnice', physio:'Fyzio', ambulance:'Sanitka'};
+
+        // Apply current filter
+        var clinics = data.clinics;
+        var filtered = clinics;
+        if (currentFilter === 'acute') {
+            filtered = clinics.filter(function(c) { return c.type === 'hospital' || c.type === 'ambulance'; });
+        } else if (currentFilter !== 'all') {
+            filtered = clinics.filter(function(c) { return c.type === currentFilter; });
+        }
+
+        console.log('[LEAFLET] Region:', regionKey, '| Clinics:', filtered.length);
+
+        _leafletMarkers = [];
+        _activeMarkerIndex = -1;
+
+        // Add clinic markers using divIcon (pure HTML, always works)
+        filtered.forEach(function(c, i) {
+            var coords = null;
+            var cityClean = c.city.replace(/\s*\u2013.*/, '').replace(/\s*-\s.*/, '').replace(/\s+\d{3,}.*/, '').trim();
+            // Exact match
+            if (cityCoords[c.city]) { coords = cityCoords[c.city]; }
+            else if (cityCoords[cityClean]) { coords = cityCoords[cityClean]; }
+            else {
+                // Case-insensitive match
+                var up = cityClean.toUpperCase();
+                for (var k in cityCoords) {
+                    if (k.toUpperCase() === up) { coords = cityCoords[k]; break; }
+                }
+            }
+            if (!coords) {
+                // Fallback: spread around region center
+                var angle = i * 137.508 * Math.PI / 180;
+                var dist = 0.015 + (i % 10) * 0.005;
+                coords = [rc.lat + dist * Math.cos(angle), rc.lng + dist * Math.sin(angle)];
+            }
+
+            var col = markerColors[c.type] || '#7c3aed';
+            var isEmergency = c.sos === 1;
+            var markerSize = isEmergency ? 18 : 14;
+            var markerHtml = isEmergency
+                ? '<div style="width:18px;height:18px;border-radius:50%;background:#dc2626;border:2px solid #fff;box-shadow:0 0 0 3px rgba(220,38,38,0.4),0 1px 4px rgba(0,0,0,0.3);animation:userPulse 2s ease-in-out infinite;position:relative;"><span style="position:absolute;top:3px;left:5px;font-size:10px;color:#fff;font-weight:bold;">+</span></div>'
+                : '<div style="width:14px;height:14px;border-radius:50%;background:' + col + ';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>';
+            var icon = L.divIcon({
+                className: '',
+                html: markerHtml,
+                iconSize: [markerSize, markerSize],
+                iconAnchor: [markerSize/2, markerSize/2],
+                popupAnchor: [0, -markerSize/2]
+            });
+
+            (function(clinicIndex) {
+                var sosBadge = isEmergency ? '<span style="background:#dc2626;color:#fff;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px;">SOS 24/7</span>' : '';
+                var waBadge = c.wa ? '<br><a href="https://wa.me/' + c.wa + '" target="_blank" style="color:#25D366;font-weight:600;text-decoration:none;">WhatsApp</a>' : '';
+                var specBadge = c.spec ? '<br><span style="font-size:11px;color:#6366f1;">' + c.spec.join(', ') + '</span>' : '';
+                var marker = L.marker(coords, {icon: icon, zIndexOffset: isEmergency ? 500 : 0}).addTo(_leafletMap).bindPopup(
+                    '<div style="font-family:Poppins,sans-serif;font-size:13px;line-height:1.5;">' +
+                    '<strong>' + c.name + '</strong>' + sosBadge + '<br>' +
+                    '<span style="color:#888;">' + c.city + '</span>' +
+                    (c.tel ? '<br>Tel: <a href="tel:' + c.tel.replace(/\s/g,'') + '">' + c.tel + '</a>' : '') +
+                    (c.hours ? '<br>' + c.hours : '') +
+                    specBadge + waBadge +
+                    '</div>'
+                ).on('click', function() {
+                    var card = document.getElementById('clinic-card-' + clinicIndex);
+                    var list = document.getElementById('mapClinicsList');
+                    if (card && list) {
+                        document.querySelectorAll('.clinic-card.highlighted').forEach(function(el) {
+                            el.classList.remove('highlighted');
+                        });
+                        card.classList.add('highlighted');
+                        card.scrollIntoView({behavior:'smooth', block:'nearest'});
+                    }
+                    highlightMarker(clinicIndex);
+                });
+                _leafletMarkers[clinicIndex] = marker;
+
+                // Save original style for reset
+                setTimeout(function() {
+                    var el = marker.getElement();
+                    if (el) {
+                        var dot = el.querySelector('div');
+                        if (dot) dot.dataset.origStyle = dot.style.cssText;
+                    }
+                }, 50);
+            })(i);
+        });
+
+        // Add user location marker if available
+        if (_userLocation && _leafletMap) {
+            var userIcon = L.divIcon({
+                className: '',
+                html: '<div style="width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,0.3),0 2px 6px rgba(0,0,0,0.3);animation:userPulse 2s ease-in-out infinite;"></div>',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+                popupAnchor: [0, -10]
+            });
+            L.marker([_userLocation.lat, _userLocation.lng], {icon: userIcon, zIndexOffset: 1000})
+                .addTo(_leafletMap)
+                .bindPopup('<div style="font-family:Poppins,sans-serif;font-size:13px;font-weight:600;">Vaše poloha</div>');
+        }
+
+        // Fix rendering after showing hidden container
+        setTimeout(function() {
+            if (_leafletMap) {
+                _leafletMap.invalidateSize();
+                console.log('[LEAFLET] Map invalidated, markers:', filtered.length);
+            }
+        }, 150);
+
+        } catch(e) { console.error('[LEAFLET] Error:', e); }
+    }
+
+    function hideLeafletMap() {
+        if (_leafletMap) {
+            _leafletMap.remove();
+            _leafletMap = null;
+        }
+        if (_leafletDiv) {
+            var leafDiv = document.getElementById(_leafletDiv);
+            if (leafDiv) leafDiv.style.display = 'none';
+        }
+        if (_leafletSvgId) {
+            var svg = document.getElementById(_leafletSvgId);
+            if (svg) svg.style.display = 'block';
+            var pfx = _leafletSvgId.replace('Map', '');
+            var btn = document.getElementById(pfx + 'ZoomBack');
+            var leg = document.getElementById(pfx + 'ZoomLegend');
+            if (btn) btn.style.display = 'none';
+            if (leg) leg.style.display = 'none';
+        }
+        _leafletDiv = null;
+        _leafletSvgId = null;
+
+        // Reset region selection and right panel
+        selectedRegionKey = null;
+        document.querySelectorAll('.region').forEach(function(r) { r.classList.remove('active'); });
+        document.getElementById('mapDetailDefault').style.display = 'block';
+        document.getElementById('mapDetailContent').style.display = 'none';
+        setTimeout(syncPanelHeight, 50);
+    }
+
+    // Back buttons
+    ['cz','sk','pl','de','at'].forEach(function(c) {
+        var btn = document.getElementById(c + 'ZoomBack');
+        if (btn) btn.addEventListener('click', function() { hideLeafletMap(); });
+    });
+
+    // Generic region click handler
+    function handleRegionClick(svgId, el) {
+        var key = el.dataset.region;
+        if (!physioData[key]) return;
+
+        // 1) Core: select region + render clinics
+        document.querySelectorAll('#' + svgId + ' .region').forEach(function(r) { r.classList.remove('active'); });
+        el.classList.add('active');
+        selectedRegionKey = key;
+        renderClinics();
+
+        // 2) Show Leaflet map
+        showLeafletMap(svgId, key);
+
+        // 3) On mobile, scroll to results
+        if (window.innerWidth <= 768) {
+            setTimeout(function() {
+                document.getElementById('mapDetailContent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    }
+
+    // Attach to all maps
+    ['czMap','skMap','plMap','deMap','atMap'].forEach(function(svgId) {
+        document.querySelectorAll('#' + svgId + ' .region').forEach(function(region) {
+            region.addEventListener('click', function() { handleRegionClick(svgId, this); });
+        });
+    });
+
+    syncPanelHeight();
+    window.addEventListener('resize', syncPanelHeight);
+
+    // =========================================================
+    // GEOLOCATION: auto-detect user's country & nearest region
+    // =========================================================
+    (function() {
+        // Bounding boxes [lat_min, lat_max, lng_min, lng_max] for each country
+        var countryBounds = {
+            cz: [48.55, 51.06, 12.09, 18.86],
+            sk: [47.73, 49.60, 16.83, 22.56],
+            pl: [49.00, 54.84, 14.12, 24.15],
+            de: [47.27, 55.06, 5.87, 15.04],
+            at: [46.37, 49.02, 9.53, 17.16]
+        };
+
+        // Center coordinates for each region (approximate centroids)
+        var regionCenters = {
+            // CZ
+            praha:            {lat:50.08, lng:14.44},
+            stredocesky:      {lat:49.87, lng:14.78},
+            jihocesky:        {lat:48.98, lng:14.44},
+            plzensky:         {lat:49.60, lng:13.35},
+            karlovarsky:      {lat:50.23, lng:12.87},
+            ustecky:          {lat:50.56, lng:13.99},
+            liberecky:        {lat:50.73, lng:15.05},
+            kralovehradecky:  {lat:50.42, lng:15.83},
+            pardubicky:       {lat:49.95, lng:16.02},
+            vysocina:         {lat:49.40, lng:15.58},
+            jihomoravsky:     {lat:49.00, lng:16.76},
+            olomoucky:        {lat:49.72, lng:17.23},
+            zlinsky:          {lat:49.16, lng:17.80},
+            moravskoslezsky:  {lat:49.80, lng:18.20},
+            // SK
+            sk_bratislavsky:  {lat:48.15, lng:17.11},
+            sk_trnavsky:      {lat:48.37, lng:17.58},
+            sk_trenciansky:   {lat:48.89, lng:18.04},
+            sk_nitriansky:    {lat:48.31, lng:18.08},
+            sk_zilinsky:      {lat:49.15, lng:19.15},
+            sk_banskobystrick:{lat:48.58, lng:19.15},
+            sk_presovsky:     {lat:49.06, lng:20.96},
+            sk_kosicky:       {lat:48.60, lng:21.13},
+            // PL
+            pl_zachodniopomorskie:  {lat:53.77, lng:15.26},
+            pl_pomorskie:           {lat:54.23, lng:18.16},
+            pl_warminskomazurskie:  {lat:53.87, lng:20.49},
+            pl_podlaskie:           {lat:53.25, lng:22.97},
+            pl_lubuskie:            {lat:52.10, lng:15.51},
+            pl_wielkopolskie:       {lat:52.10, lng:17.22},
+            pl_kujawskopomorskie:   {lat:53.00, lng:18.30},
+            pl_mazowieckie:         {lat:51.85, lng:20.65},
+            pl_lodzkie:             {lat:51.56, lng:19.45},
+            pl_dolnoslaskie:        {lat:51.07, lng:16.58},
+            pl_opolskie:            {lat:50.68, lng:17.92},
+            pl_slaskie:             {lat:50.30, lng:19.00},
+            pl_swietokrzyskie:      {lat:50.87, lng:20.70},
+            pl_lubelskie:           {lat:51.20, lng:22.60},
+            pl_malopolskie:         {lat:49.88, lng:20.10},
+            pl_podkarpackie:        {lat:49.85, lng:22.00},
+            // DE
+            de_schleswig_holstein:  {lat:54.22, lng:9.85},
+            de_hamburg:             {lat:53.55, lng:10.00},
+            de_niedersachsen:       {lat:52.60, lng:9.40},
+            de_bremen:              {lat:53.08, lng:8.80},
+            de_brandenburg:         {lat:52.30, lng:13.50},
+            de_berlin:              {lat:52.52, lng:13.41},
+            de_sachsen_anhalt:      {lat:51.85, lng:11.70},
+            de_mecklenburg_vorpommern: {lat:53.83, lng:12.25},
+            de_hessen:              {lat:50.65, lng:9.00},
+            de_thueringen:          {lat:50.90, lng:11.00},
+            de_sachsen:             {lat:51.00, lng:13.50},
+            de_rheinland_pfalz:     {lat:50.00, lng:7.50},
+            de_saarland:            {lat:49.38, lng:7.00},
+            de_baden_wuerttemberg:  {lat:48.60, lng:9.10},
+            de_bayern:              {lat:48.80, lng:11.50},
+            de_nordrhein_westfalen: {lat:51.50, lng:7.50},
+            // AT
+            at_vorarlberg:    {lat:47.25, lng:9.90},
+            at_tirol:         {lat:47.06, lng:11.39},
+            at_salzburg:      {lat:47.40, lng:13.20},
+            at_kaernten:      {lat:46.73, lng:13.85},
+            at_oberoesterreich:{lat:48.16, lng:14.02},
+            at_steiermark:    {lat:47.25, lng:15.26},
+            at_niederoesterreich: {lat:48.33, lng:15.76},
+            at_burgenland:    {lat:47.50, lng:16.42},
+            at_wien:          {lat:48.21, lng:16.37}
+        };
+
+        // Map country code to SVG map prefix and data-region prefixes
+        var countryToSvg = {cz:'czMap', sk:'skMap', pl:'plMap', de:'deMap', at:'atMap'};
+
+        function detectCountry(lat, lng) {
+            for (var c in countryBounds) {
+                var b = countryBounds[c];
+                if (lat >= b[0] && lat <= b[1] && lng >= b[2] && lng <= b[3]) return c;
+            }
+            return null;
+        }
+
+        function findNearestRegion(lat, lng, countryPrefix) {
+            var best = null, bestDist = Infinity;
+            for (var key in regionCenters) {
+                // Match region to country
+                var isMatch = false;
+                if (countryPrefix === 'cz') {
+                    isMatch = !key.match(/^(sk_|pl_|de_|at_)/);
+                } else {
+                    isMatch = key.indexOf(countryPrefix + '_') === 0;
+                }
+                if (!isMatch) continue;
+
+                var rc = regionCenters[key];
+                var dlat = lat - rc.lat, dlng = lng - rc.lng;
+                var dist = dlat * dlat + dlng * dlng;
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = key;
+                }
+            }
+            return best;
+        }
+
+        function activateCountryAndRegion(country, regionKey) {
+            // 1) Click the country tab
+            var countryBtn = document.querySelector('.country-btn[data-country="' + country + '"]');
+            if (countryBtn && currentCountry !== country) {
+                countryBtn.click();
+            }
+
+            // 2) Click the region in the SVG
+            if (regionKey && physioData[regionKey]) {
+                var svgId = countryToSvg[country];
+                var regionEl = document.querySelector('#' + svgId + ' .region[data-region="' + regionKey + '"]');
+                if (regionEl) {
+                    setTimeout(function() {
+                        handleRegionClick(svgId, regionEl);
+                    }, 200);
+                }
+            }
+        }
+
+        // Try geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    var lat = pos.coords.latitude;
+                    var lng = pos.coords.longitude;
+                    _userLocation = {lat: lat, lng: lng};
+                    console.log('[MAPA v3] Geolocation:', lat, lng);
+
+                    var country = detectCountry(lat, lng);
+                    if (!country) {
+                        console.log('[MAPA v3] User not in supported country, keeping default');
+                        return;
+                    }
+
+                    var region = findNearestRegion(lat, lng, country);
+                    console.log('[MAPA v3] Detected: country=' + country + ', region=' + region);
+                    activateCountryAndRegion(country, region);
+                },
+                function(err) {
+                    console.log('[MAPA v3] Geolocation denied or unavailable:', err.message);
+                    // Keep default country selection menu
+                },
+                {enableHighAccuracy: true, timeout: 10000, maximumAge: 60000}
+            );
+        }
+    })();
+
+    console.log('[MAPA v3] All handlers attached OK');
+    } catch(err) { console.error('[MAPA v3] SCRIPT ERROR:', err); document.title = 'CHYBA: ' + err.message; }
+    </script>
+    <script src="cookie-consent.js"></script>
+
+    <!-- SOS EMERGENCY PANEL -->
+    <button class="sos-btn-fixed" id="sosBtn" title="Nejbližší pohotovost">SOS</button>
+    <div class="sos-overlay" id="sosOverlay">
+        <div class="sos-panel" style="position:relative;">
+            <button class="sos-close" id="sosClose">&times;</button>
+            <h2>Nejbližší pohotovost</h2>
+            <p class="sos-subtitle">Veterinární kliniky s nepřetržitým provozem</p>
+            <div id="sosResults">
+                <div class="sos-searching">Zjišťuji vaši polohu...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        var sosBtn = document.getElementById('sosBtn');
+        var sosOverlay = document.getElementById('sosOverlay');
+        var sosClose = document.getElementById('sosClose');
+        var sosResults = document.getElementById('sosResults');
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        function findNearestSOS(lat, lng) {
+            var results = [];
+            for (var key in physioData) {
+                if (!physioData[key].clinics) continue;
+                physioData[key].clinics.forEach(function(c) {
+                    if (c.sos === 1 || c.type === 'hospital' || c.type === 'ambulance') {
+                        if (c.lat && c.lng) {
+                            var dist = haversine(lat, lng, c.lat, c.lng);
+                            results.push({clinic: c, dist: dist, region: key});
+                        }
+                    }
+                });
+            }
+            results.sort(function(a, b) { return a.dist - b.dist; });
+            return results.slice(0, 5);
+        }
+
+        function renderSOSResults(results) {
+            if (results.length === 0) {
+                sosResults.innerHTML = '<div class="sos-searching">Nepodařilo se najít pohotovostní kliniky ve vašem okolí.</div>';
+                return;
+            }
+            var html = '';
+            results.forEach(function(r) {
+                var c = r.clinic;
+                var distText = r.dist < 1 ? Math.round(r.dist * 1000) + ' m' : r.dist.toFixed(1) + ' km';
+                var telClean = c.tel ? c.tel.replace(/\s/g, '') : '';
+                var telPrefix = (telClean && telClean.indexOf('+') === 0) ? '' : '+420';
+                html += '<div class="sos-card">';
+                html += '<h3>' + c.name + '</h3>';
+                html += '<span class="sos-dist">' + distText + '</span>';
+                html += ' <span class="sos-city">' + (c.city || '') + '</span>';
+                if (c.addr) html += '<br><span style="font-size:12px;color:#888;">' + c.addr + '</span>';
+                if (c.tel) {
+                    html += '<br><a href="tel:' + telPrefix + telClean + '" class="sos-call">VOLAT HNED: ' + c.tel + '</a>';
+                }
+                if (c.wa) {
+                    html += ' <a href="https://wa.me/' + c.wa + '" target="_blank" class="sos-call" style="background:#25D366;">WhatsApp</a>';
+                }
+                html += '</div>';
+            });
+            sosResults.innerHTML = html;
+        }
+
+        function triggerSOS() {
+            sosOverlay.classList.add('active');
+            sosResults.innerHTML = '<div class="sos-searching">Zjišťuji vaši polohu...</div>';
+
+            if (!navigator.geolocation) {
+                sosResults.innerHTML = '<div class="sos-searching">Geolokace není dostupná ve vašem prohlížeči.</div>';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    var lat = pos.coords.latitude;
+                    var lng = pos.coords.longitude;
+                    var results = findNearestSOS(lat, lng);
+                    renderSOSResults(results);
+                },
+                function(err) {
+                    sosResults.innerHTML = '<div class="sos-searching">Přístup k poloze byl zamítnut. Povolte geolokaci a zkuste znovu.</div>';
+                },
+                {enableHighAccuracy: true, timeout: 10000, maximumAge: 60000}
+            );
+        }
+
+        sosBtn.addEventListener('click', triggerSOS);
+        sosClose.addEventListener('click', function() { sosOverlay.classList.remove('active'); });
+        sosOverlay.addEventListener('click', function(e) {
+            if (e.target === sosOverlay) sosOverlay.classList.remove('active');
+        });
+    })();
+    </script>
+</body>
+</html>
